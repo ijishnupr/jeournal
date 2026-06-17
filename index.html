@@ -6,147 +6,233 @@
 <title>Trade Journal</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+
+/* ── LIGHT THEME ── */
 :root{
-  --primary:#2563eb;--primary-d:#1d4ed8;
-  --success:#16a34a;--danger:#dc2626;
-  --bg:#f1f5f9;--card:#fff;--border:#e2e8f0;
-  --text:#0f172a;--muted:#94a3b8;--sec:#475569;
-  --shadow:0 1px 3px rgba(0,0,0,.1);--shadow-lg:0 10px 15px -3px rgba(0,0,0,.12)
+  --primary:#6366f1;--primary-d:#4f46e5;--primary-rgb:99,102,241;
+  --success:#10b981;--danger:#ef4444;--warn:#f59e0b;
+  --bg:#f0f2ff;--card:#ffffff;--card2:#f8faff;
+  --border:#e4e7f5;--border2:#d1d5f0;
+  --text:#0f172a;--sec:#4b5563;--muted:#9ca3af;
+  --shadow:0 1px 4px rgba(99,102,241,.08),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 16px rgba(99,102,241,.12),0 2px 6px rgba(0,0,0,.06);
+  --shadow-lg:0 12px 32px rgba(99,102,241,.15),0 4px 12px rgba(0,0,0,.08);
+  --input-bg:#ffffff;--row-hover:#f5f7ff;
+  --badge-long-bg:#d1fae5;--badge-long-fg:#065f46;
+  --badge-short-bg:#fee2e2;--badge-short-fg:#991b1b;
+  --overlay:rgba(255,255,255,.85)
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
 
-/* NAV */
-.nav{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
-.nav-brand{font-size:1.2rem;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:8px}
-.nav-right{display:flex;align-items:center;gap:10px}
+/* ── DARK THEME ── */
+[data-dark]{
+  --primary:#818cf8;--primary-d:#6366f1;--primary-rgb:129,140,248;
+  --success:#34d399;--danger:#f87171;--warn:#fbbf24;
+  --bg:#080c18;--card:#0f1629;--card2:#131d35;
+  --border:#1e2d45;--border2:#253552;
+  --text:#e2e8f0;--sec:#94a3b8;--muted:#4b5a72;
+  --shadow:0 1px 4px rgba(0,0,0,.4);
+  --shadow-md:0 4px 16px rgba(0,0,0,.4);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.5);
+  --input-bg:#0f1629;--row-hover:#141e35;
+  --badge-long-bg:#064e3b;--badge-long-fg:#6ee7b7;
+  --badge-short-bg:#450a0a;--badge-short-fg:#fca5a5;
+  --overlay:rgba(8,12,24,.88)
+}
 
-/* BUTTONS */
-.btn{padding:8px 16px;border-radius:8px;font-size:.875rem;font-weight:500;cursor:pointer;border:none;transition:.15s;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
-.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-d)}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}.btn-outline:hover{background:var(--bg)}
-.btn-lg{padding:12px 24px;font-size:1rem;border-radius:10px}
-.btn-sm{padding:5px 10px;font-size:.8rem}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;transition:background .25s,color .25s}
 
-/* SETUP SCREEN */
-.setup-screen{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 60px);padding:24px}
-.setup-card{background:var(--card);border-radius:16px;padding:40px;max-width:680px;width:100%;box-shadow:var(--shadow-lg);border:1px solid var(--border)}
-.setup-card h1{font-size:1.4rem;margin-bottom:6px}
-.setup-card p.sub{color:var(--sec);margin-bottom:28px;font-size:.95rem}
+/* ── NAV ── */
+.nav{
+  background:var(--card);border-bottom:1px solid var(--border);
+  padding:0 24px;display:flex;align-items:center;justify-content:space-between;
+  height:62px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);
+  transition:background .25s,border-color .25s
+}
+.nav-brand{font-size:1.1rem;font-weight:800;display:flex;align-items:center;gap:9px;
+  background:linear-gradient(135deg,var(--primary),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nav-brand svg{stroke:url(#brandGrad);flex-shrink:0;-webkit-text-fill-color:initial}
+.nav-right{display:flex;align-items:center;gap:8px}
+
+/* ── BUTTONS ── */
+.btn{padding:7px 14px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;
+  transition:all .15s;display:inline-flex;align-items:center;gap:5px;font-family:inherit;letter-spacing:.01em}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-d));color:#fff;box-shadow:0 2px 8px rgba(var(--primary-rgb),.35)}
+.btn-primary:hover{opacity:.9;box-shadow:0 4px 14px rgba(var(--primary-rgb),.45);transform:translateY(-1px)}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--sec)}
+.btn-outline:hover{background:var(--card2);color:var(--text);border-color:var(--primary)}
+.btn-ghost{background:transparent;border:none;color:var(--muted);padding:7px 10px}
+.btn-ghost:hover{color:var(--text);background:var(--card2)}
+.btn-lg{padding:11px 22px;font-size:.95rem;border-radius:10px}
+.btn-sm{padding:4px 9px;font-size:.77rem;border-radius:6px}
+.btn-icon{width:34px;height:34px;padding:0;justify-content:center;border-radius:8px}
+
+/* ── THEME TOGGLE ── */
+.theme-btn{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;border:1px solid var(--border2);background:var(--card2);transition:.15s;font-size:1rem}
+.theme-btn:hover{border-color:var(--primary);background:var(--card)}
+
+/* ── SETUP SCREEN ── */
+.setup-screen{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 62px);padding:24px}
+.setup-card{background:var(--card);border-radius:18px;padding:40px;max-width:700px;width:100%;box-shadow:var(--shadow-lg);border:1px solid var(--border)}
+.setup-card h1{font-size:1.5rem;font-weight:800;margin-bottom:6px}
+.setup-card p.sub{color:var(--sec);margin-bottom:28px}
 .steps{counter-reset:s;list-style:none}
-.steps li{counter-increment:s;display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:.9rem;color:var(--sec)}
+.steps li{counter-increment:s;display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);font-size:.875rem;color:var(--sec);align-items:flex-start}
 .steps li:last-child{border-bottom:none}
-.steps li::before{content:counter(s);background:var(--primary);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;margin-top:1px}
+.steps li::before{content:counter(s);background:linear-gradient(135deg,var(--primary),var(--primary-d));color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0}
 .steps li strong{color:var(--text)}
-code{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:.85em;color:var(--primary);border:1px solid var(--border)}
-pre{background:#0f172a;color:#e2e8f0;padding:16px;border-radius:10px;font-size:.82rem;overflow-x:auto;line-height:1.6;margin:12px 0}
+code{background:var(--card2);padding:2px 7px;border-radius:5px;font-family:'JetBrains Mono',monospace,monospace;font-size:.82em;color:var(--primary);border:1px solid var(--border)}
+pre{background:#060d1f;color:#a5b4fc;padding:16px;border-radius:10px;font-size:.78rem;overflow-x:auto;line-height:1.7;margin:12px 0;border:1px solid #1e2d45}
 .url-input-row{display:flex;gap:8px;margin-top:20px}
-.url-input-row input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;font-family:inherit}
-.url-input-row input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
-.copy-btn{padding:4px 10px;background:#1e293b;color:#e2e8f0;border:none;border-radius:6px;font-size:.75rem;cursor:pointer;font-family:monospace}
-.copy-btn:hover{background:#334155}
+.url-input-row input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:9px;font-size:.875rem;font-family:inherit;background:var(--input-bg);color:var(--text)}
+.url-input-row input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(var(--primary-rgb),.15)}
+.copy-btn{padding:5px 11px;background:#1e293b;color:#a5b4fc;border:none;border-radius:7px;font-size:.72rem;cursor:pointer;font-family:monospace}
+.copy-btn:hover{background:#253552}
 
-/* TABS */
-.tabs{display:flex;gap:2px;padding:0 24px;background:var(--card);border-bottom:1px solid var(--border)}
-.tab{padding:14px 18px;font-size:.875rem;font-weight:500;color:var(--sec);cursor:pointer;border-bottom:2px solid transparent;transition:.15s;white-space:nowrap}
-.tab:hover{color:var(--text)}.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+/* ── TABS ── */
+.tabs{display:flex;gap:0;padding:0 24px;background:var(--card);border-bottom:1px solid var(--border);transition:background .25s}
+.tab{padding:13px 20px;font-size:.85rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;letter-spacing:.01em}
+.tab:hover{color:var(--sec)}.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
 
-/* CONTENT */
-.content{padding:24px;max-width:1200px;margin:0 auto}
+/* ── CONTENT ── */
+.content{padding:24px;max-width:1240px;margin:0 auto}
 .tab-content{display:none}.tab-content.active{display:block}
 
-/* CARD */
-.card{background:var(--card);border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow)}
-.card-header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
-.card-header h2{font-size:1.05rem;font-weight:600}
-.card-body{padding:24px}
+/* ── CARD ── */
+.card{background:var(--card);border-radius:14px;border:1px solid var(--border);box-shadow:var(--shadow);transition:background .25s,border-color .25s}
+.card-header{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.card-header h2{font-size:1rem;font-weight:700;letter-spacing:.01em}
+.card-body{padding:22px}
 
-/* FORM */
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+/* ── FORM SECTION LABEL ── */
+.form-section{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-top:6px}
+.form-section span{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.form-section::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── FORM ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:600px){.form-grid{grid-template-columns:1fr}}
 .fg{display:flex;flex-direction:column;gap:5px}
 .fg.full{grid-column:1/-1}
-label{font-size:.85rem;font-weight:500;color:var(--sec)}
-input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;color:var(--text);background:var(--card);width:100%;font-family:inherit;transition:.15s}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+label{font-size:.8rem;font-weight:600;color:var(--sec);letter-spacing:.01em}
+input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{
+  padding:9px 12px;border:1px solid var(--border);border-radius:8px;
+  font-size:.875rem;color:var(--text);background:var(--input-bg);
+  width:100%;font-family:inherit;transition:.15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(var(--primary-rgb),.12)}
+input[readonly]{background:var(--card2);color:var(--sec);cursor:default}
+select{cursor:pointer}
 textarea{resize:vertical;min-height:72px}
 
-/* STARS */
-.stars{display:flex;flex-direction:row-reverse;gap:2px;justify-content:flex-end}
+/* ── STARS ── */
+.stars{display:flex;flex-direction:row-reverse;gap:1px;justify-content:flex-end}
 .stars input{display:none}
-.stars label{font-size:1.6rem;cursor:pointer;color:var(--muted);line-height:1;transition:.1s}
-.stars input:checked ~ label,.stars label:hover,.stars label:hover ~ label{color:#f59e0b}
+.stars label{font-size:1.5rem;cursor:pointer;color:var(--border2);line-height:1;transition:.1s}
+.stars input:checked ~ label,.stars label:hover,.stars label:hover ~ label{color:var(--warn)}
 
-/* IMAGE UPLOAD */
-.upload-area{border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:.15s;color:var(--muted)}
-.upload-area:hover,.upload-area.drag{border-color:var(--primary);background:#eff6ff;color:var(--primary)}
+/* ── IMAGE UPLOAD ── */
+.upload-area{border:2px dashed var(--border2);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:.15s;color:var(--muted)}
+.upload-area:hover,.upload-area.drag{border-color:var(--primary);background:rgba(var(--primary-rgb),.05);color:var(--primary)}
 .img-preview{display:none;position:relative}
-.img-preview img{width:100%;max-height:220px;object-fit:cover;border-radius:8px}
-.rm-img{position:absolute;top:8px;right:8px;background:var(--danger);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center}
+.img-preview img{width:100%;max-height:220px;object-fit:cover;border-radius:9px}
+.rm-img{position:absolute;top:8px;right:8px;background:var(--danger);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3)}
 
-/* PNL LIVE */
-.pnl-live{background:var(--bg);border-radius:8px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;min-width:220px}
-.pnl-lbl{font-size:.8rem;color:var(--sec)}
-.pnl-val{font-size:1.2rem;font-weight:700}
+/* ── PNL LIVE ── */
+.pnl-live{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 16px;min-width:230px}
+.pnl-lbl{font-size:.73rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.pnl-val{font-size:1.1rem;font-weight:800}
 
-/* STATS */
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:14px;margin-bottom:20px}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:var(--shadow)}
-.stat-label{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
-.stat-val{font-size:1.6rem;font-weight:700}
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:box-shadow .2s}
+.stat-card:hover{box-shadow:var(--shadow-md)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--primary),#a78bfa)}
+.stat-label{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.stat-val{font-size:1.55rem;font-weight:800;line-height:1}
+.stat-sub{font-size:.75rem;color:var(--muted);margin-top:4px}
 .pos{color:var(--success)}.neg{color:var(--danger)}
 
-/* TABLE */
+/* ── TABLE ── */
 .tbl-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:.875rem}
-th{padding:11px 14px;text-align:left;font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:var(--bg);border-bottom:1px solid var(--border)}
-td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+table{width:100%;border-collapse:collapse;font-size:.845rem}
+thead{position:sticky;top:62px;z-index:10}
+th{padding:11px 14px;text-align:left;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;background:var(--card2);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle;transition:background .1s}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:#f8fafc}
+tr:hover td{background:var(--row-hover)}
 
-/* BADGES */
-.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:.72rem;font-weight:600}
-.b-long{background:#dcfce7;color:#166534}.b-short{background:#fee2e2;color:#991b1b}
-.ppos{color:var(--success);font-weight:600}.pneg{color:var(--danger);font-weight:600}
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:.7rem;font-weight:700;letter-spacing:.02em}
+.b-long{background:var(--badge-long-bg);color:var(--badge-long-fg)}
+.b-short{background:var(--badge-short-bg);color:var(--badge-short-fg)}
+.ppos{color:var(--success);font-weight:700}.pneg{color:var(--danger);font-weight:700}
 
-/* FILTERS */
-.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
-.filters input,.filters select{max-width:160px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit}
+/* ── FILTERS ── */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.filters input,.filters select{padding:7px 11px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;font-family:inherit;background:var(--input-bg);color:var(--text);max-width:155px}
+.filters input:focus,.filters select:focus{outline:none;border-color:var(--primary)}
 
-/* LIGHTBOX */
-.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:2000;align-items:center;justify-content:center}
+/* ── EDIT BANNER ── */
+.edit-banner{background:linear-gradient(90deg,rgba(245,158,11,.12),rgba(245,158,11,.06));border-bottom:1px solid rgba(245,158,11,.3);padding:10px 22px;display:flex;align-items:center;justify-content:space-between}
+.edit-banner span{font-size:.84rem;color:var(--warn);font-weight:600}
+
+/* ── LIGHTBOX ── */
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:2000;align-items:center;justify-content:center}
 .lightbox.on{display:flex}
-.lightbox img{max-width:90vw;max-height:90vh;border-radius:8px}
-.lb-close{position:fixed;top:18px;right:22px;background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:50%;width:38px;height:38px;font-size:1.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.lightbox img{max-width:90vw;max-height:90vh;border-radius:10px;box-shadow:0 0 60px rgba(0,0,0,.6)}
+.lb-close{position:fixed;top:18px;right:22px;background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:1.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 
-/* LOADING */
-.loading-bg{display:none;position:fixed;inset:0;background:rgba(255,255,255,.82);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+/* ── LOADING ── */
+.loading-bg{display:none;position:fixed;inset:0;background:var(--overlay);backdrop-filter:blur(4px);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:14px}
 .loading-bg.on{display:flex}
-.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
+.spinner{width:38px;height:38px;border:3px solid var(--border2);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+.loading-bg p{font-size:.875rem;color:var(--sec);font-weight:500}
 
-/* TOAST */
-.toasts{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:8px}
-.toast{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:10px;font-size:.875rem;min-width:240px;animation:slideIn .3s ease}
+/* ── TOAST ── */
+.toasts{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:12px 16px;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:10px;font-size:.85rem;min-width:240px;animation:slideIn .3s ease;pointer-events:all}
 .toast.ok{border-left:4px solid var(--success)}.toast.err{border-left:4px solid var(--danger)}.toast.info{border-left:4px solid var(--primary)}
-@keyframes slideIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast-icon{font-size:1rem}
+@keyframes slideIn{from{transform:translateX(115%);opacity:0}to{transform:translateX(0);opacity:1}}
 
-.empty{text-align:center;padding:40px;color:var(--muted)}
-.empty svg{width:52px;height:52px;margin-bottom:12px}
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 24px;color:var(--muted)}
+.empty svg{width:54px;height:54px;margin-bottom:14px;opacity:.5}
+.empty p{font-size:.9rem}
+
 .hidden{display:none!important}
-@media(max-width:768px){.content{padding:14px}.card-body{padding:16px}.tabs{overflow-x:auto}}
+@media(max-width:768px){
+  .content{padding:14px}
+  .card-body{padding:16px}
+  .tabs{overflow-x:auto;padding:0 14px}
+  .nav{padding:0 16px}
+  .stat-val{font-size:1.3rem}
+  .nav-right .btn-outline{display:none}
+}
 </style>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+</svg>
 </head>
 <body>
 
 <!-- NAV -->
 <nav class="nav">
   <div class="nav-brand">
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    Trade Journal
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="url(#brandGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    TradeJournal
   </div>
   <div class="nav-right">
-    <button class="btn btn-outline" onclick="openSetup()">✏ Edit Credentials</button>
+    <button class="btn btn-outline" onclick="openSetup()">✏ Credentials</button>
     <button class="btn btn-outline" onclick="copyUrl()">⎘ Copy URL</button>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
   </div>
 </nav>
 
@@ -169,9 +255,59 @@ tr:hover td{background:#f8fafc}
           <div style="position:relative">
             <pre id="scriptCode">const SHEET_NAME = 'Trades';
 const HEADERS = ['Timestamp','Date','Entry Time','Exit Time','Time Taken','Symbol','Market','Direction','Entry Price','Exit Price','Quantity','Gross P&L','P&L %','Net P&L','Stop Loss','Take Profit','Charges','Strategy','Notes','Mistakes','Rating','Image URL','Drive File ID'];
-function doGet(e){try{const s=SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);if(!s||s.getLastRow()<=1)return out({trades:[]});const r=s.getDataRange().getValues();r.shift();return out({trades:r})}catch(e){return out({error:e.message})}}
-function doPost(e){try{const d=JSON.parse(e.postData.contents);if(d.type==='image'){const b=Utilities.newBlob(Utilities.base64Decode(d.base64),d.mimeType,d.filename);const f=DriveApp.createFile(b);f.setSharing(DriveApp.Access.ANYONE_WITH_LINK,DriveApp.Permission.VIEW);return out({success:true,fileId:f.getId(),url:'https://drive.google.com/file/d/'+f.getId()+'/view'})}if(d.type==='trade'){const ss=SpreadsheetApp.getActiveSpreadsheet();let s=ss.getSheetByName(SHEET_NAME);if(!s)s=ss.insertSheet(SHEET_NAME);if(s.getLastRow()===0)s.appendRow(HEADERS);s.appendRow(d.row);return out({success:true})}return out({error:'Unknown type'})}catch(e){return out({error:e.message})}}
-function out(o){return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON)}</pre>
+
+function doGet(e) {
+  try {
+    const s = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    if (!s || s.getLastRow() <= 1) return out({ trades: [] });
+    const rows = s.getDataRange().getValues();
+    rows.shift();
+    const clean = rows.map(row => row.map(cell => {
+      if (cell instanceof Date) {
+        if (cell.getFullYear() <= 1900) {
+          return String(cell.getHours()).padStart(2,'0') + ':' + String(cell.getMinutes()).padStart(2,'0');
+        }
+        return cell.getFullYear() + '-' + String(cell.getMonth()+1).padStart(2,'0') + '-' + String(cell.getDate()).padStart(2,'0');
+      }
+      return cell;
+    }));
+    return out({ trades: clean });
+  } catch(e) { return out({ error: e.message }); }
+}
+
+function doPost(e) {
+  try {
+    const d = JSON.parse(e.postData.contents);
+    if (d.type === 'image') {
+      const f = DriveApp.createFile(Utilities.newBlob(Utilities.base64Decode(d.base64), d.mimeType, d.filename));
+      f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      return out({ success:true, fileId:f.getId(), url:'https://drive.google.com/file/d/'+f.getId()+'/view' });
+    }
+    if (d.type === 'update') {
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+      if (!sheet) return out({ error: 'Sheet not found' });
+      const values = sheet.getDataRange().getValues();
+      for (let i = 1; i < values.length; i++) {
+        if (String(values[i][0]) === String(d.timestamp)) {
+          sheet.getRange(i+1, 1, 1, d.row.length).setValues([d.row]);
+          return out({ success: true });
+        }
+      }
+      return out({ error: 'Trade not found' });
+    }
+    if (d.type === 'trade') {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      let sheet = ss.getSheetByName(SHEET_NAME);
+      if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
+      if (sheet.getLastRow() === 0) sheet.appendRow(HEADERS);
+      sheet.appendRow(d.row);
+      return out({ success: true });
+    }
+    return out({ error: 'Unknown request type' });
+  } catch(e) { return out({ error: e.message }); }
+}
+
+function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }</pre>
             <button class="copy-btn" style="position:absolute;top:8px;right:8px" onclick="copyScript()">Copy</button>
           </div>
         </div>
@@ -211,9 +347,9 @@ function out(o){return ContentService.createTextOutput(JSON.stringify(o)).setMim
     <!-- NEW TRADE -->
     <div id="tab-new" class="tab-content active">
       <div class="card">
-        <div id="editBanner" class="hidden" style="background:#fffbeb;border-bottom:1px solid #fcd34d;padding:10px 24px;display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:.875rem;color:#92400e;font-weight:500">✏ Editing trade — changes will overwrite the original row in your sheet</span>
-          <button class="btn btn-outline btn-sm" onclick="cancelEdit()">✕ Cancel Edit</button>
+        <div id="editBanner" class="edit-banner hidden">
+          <span>✏ Editing trade — changes will overwrite the original row</span>
+          <button class="btn btn-outline btn-sm" onclick="cancelEdit()">✕ Cancel</button>
         </div>
         <div class="card-header">
           <h2 id="formTitle">Log a Trade</h2>
@@ -231,9 +367,9 @@ function out(o){return ContentService.createTextOutput(JSON.stringify(o)).setMim
         <div class="card-body">
           <form id="tradeForm" onsubmit="submitTrade(event)">
             <div class="form-grid">
-              <div class="fg"><label>Date *</label><input type="date" id="fDate" required></div>
-              <div class="fg"><label>Entry Time</label><input type="time" id="fTime" oninput="calcPnl()"></div>
+              <div class="form-section"><span>Trade Info</span></div>
 
+              <div class="fg"><label>Date *</label><input type="date" id="fDate" required></div>
               <div class="fg"><label>Symbol / Ticker *</label><input type="text" id="fSymbol" placeholder="AAPL, BTC/USD…" required style="text-transform:uppercase"></div>
               <div class="fg"><label>Market</label>
                 <select id="fMarket">
@@ -241,31 +377,35 @@ function out(o){return ContentService.createTextOutput(JSON.stringify(o)).setMim
                   <option>Options</option><option>Futures</option><option>Indices</option><option>Other</option>
                 </select>
               </div>
-
               <div class="fg"><label>Direction *</label>
                 <select id="fDir" required onchange="calcPnl()">
-                  <option value="Long">Long (Buy)</option>
-                  <option value="Short">Short (Sell)</option>
+                  <option value="Long">▲ Long (Buy)</option>
+                  <option value="Short">▼ Short (Sell)</option>
                 </select>
               </div>
-              <div class="fg"><label>Quantity *</label><input type="number" id="fQty" step="any" min="0" placeholder="100" required oninput="calcPnl()"></div>
+
+              <div class="form-section"><span>Pricing</span></div>
 
               <div class="fg"><label>Entry Price *</label><input type="number" id="fEntry" step="any" min="0" placeholder="0.00" required oninput="calcPnl()"></div>
-              <div class="fg"><label>Exit Price <span style="font-weight:400;color:var(--muted)">(blank = open position)</span></label>
+              <div class="fg"><label>Exit Price <span style="font-weight:400;color:var(--muted)">(blank = open)</span></label>
                 <input type="number" id="fExit" step="any" min="0" placeholder="0.00" oninput="calcPnl()">
               </div>
-
-              <div class="fg"><label>Exit Time</label><input type="time" id="fExitTime" oninput="calcPnl()"></div>
-              <div class="fg"><label>Time Taken <span style="font-weight:400;color:var(--muted)">(auto)</span></label>
-                <input type="text" id="fTimeTaken" readonly placeholder="—" style="background:var(--bg);color:var(--sec)">
+              <div class="fg"><label>Quantity *</label><input type="number" id="fQty" step="any" min="0" placeholder="100" required oninput="calcPnl()"></div>
+              <div class="fg"><label>Trade Charges ₹ <span style="font-weight:400;color:var(--muted)">(Groww)</span></label>
+                <input type="number" id="fCharges" step="any" min="0" value="12" oninput="calcPnl()">
               </div>
-
               <div class="fg"><label>Stop Loss</label><input type="number" id="fSL" step="any" min="0" placeholder="0.00"></div>
               <div class="fg"><label>Take Profit</label><input type="number" id="fTP" step="any" min="0" placeholder="0.00"></div>
 
-              <div class="fg"><label>Trade Charges (₹) <span style="font-weight:400;color:var(--muted)">Groww flat fee</span></label>
-                <input type="number" id="fCharges" step="any" min="0" value="12" oninput="calcPnl()">
+              <div class="form-section"><span>Timing</span></div>
+
+              <div class="fg"><label>Entry Time</label><input type="time" id="fTime" oninput="calcPnl()"></div>
+              <div class="fg"><label>Exit Time</label><input type="time" id="fExitTime" oninput="calcPnl()"></div>
+              <div class="fg"><label>Duration <span style="font-weight:400;color:var(--muted)">(auto)</span></label>
+                <input type="text" id="fTimeTaken" readonly placeholder="—">
               </div>
+
+              <div class="form-section"><span>Analysis</span></div>
 
               <div class="fg"><label>Strategy / Setup</label><input type="text" id="fSetup" placeholder="Breakout, Mean Reversion…"></div>
               <div class="fg"><label>Trade Rating</label>
@@ -278,7 +418,7 @@ function out(o){return ContentService.createTextOutput(JSON.stringify(o)).setMim
                 </div>
               </div>
 
-              <div class="fg full"><label>Trade Rationale / Notes</label><textarea id="fNotes" placeholder="Why did you take this trade?"></textarea></div>
+              <div class="fg full"><label>Trade Rationale / Notes</label><textarea id="fNotes" placeholder="Why did you take this trade? What was your thesis?"></textarea></div>
               <div class="fg full"><label>Mistakes / Lessons Learned</label><textarea id="fMistakes" placeholder="What could you have done better?"></textarea></div>
 
               <div class="fg full">
@@ -377,7 +517,7 @@ function out(o){return ContentService.createTextOutput(JSON.stringify(o)).setMim
 <!-- LOADING -->
 <div class="loading-bg" id="loading">
   <div class="spinner"></div>
-  <span id="loadTxt" style="color:var(--sec);font-size:.9rem">Loading…</span>
+  <p id="loadTxt">Loading…</p>
 </div>
 
 <!-- TOASTS -->
@@ -396,8 +536,20 @@ const HEADERS = ['Timestamp','Date','Entry Time','Exit Time','Time Taken',
   'Gross P&L','P&L %','Net P&L','Stop Loss','Take Profit','Charges',
   'Strategy','Notes','Mistakes','Rating','Image URL','Drive File ID'];
 
+// ─── THEME ───────────────────────────────────────────────────
+function applyTheme(dark){
+  document.documentElement.toggleAttribute('data-dark', dark);
+  document.getElementById('themeBtn').textContent = dark ? '☀️' : '🌙';
+}
+function toggleTheme(){
+  const dark = !document.documentElement.hasAttribute('data-dark');
+  localStorage.setItem('tj_dark', dark ? '1' : '');
+  applyTheme(dark);
+}
+
 // ─── INIT ───────────────────────────────────────────────────
 window.addEventListener('load', () => {
+  applyTheme(localStorage.getItem('tj_dark') === '1');
   document.getElementById('fDate').value = today();
   document.getElementById('urlInput').value = GAS_URL;
   if (GAS_URL) { showApp(); loadTrades(); }
@@ -598,9 +750,13 @@ function fmtDate(v){
 }
 function fmtTime(v){
   if(!v) return '';
-  const s=String(v);
-  if(/^\d{2}:\d{2}/.test(s)) return s.substring(0,5);   // already HH:MM
-  return s;
+  const s=String(v).trim();
+  if(/^\d{1,2}:\d{2}/.test(s)) return s.substring(0,5);  // HH:MM or H:MM
+  if(s.includes('T')){                                     // ISO datetime — extract UTC time then adjust
+    const d=new Date(s);
+    if(!isNaN(d)) return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+  return '';
 }
 
 async function loadTrades(){
