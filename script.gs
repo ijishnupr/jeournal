@@ -16,7 +16,15 @@ function doGet(e) {
     if (!sheet || sheet.getLastRow() <= 1) return out({ trades: [] });
     const rows = sheet.getDataRange().getValues();
     rows.shift(); // remove header row
-    return out({ trades: rows });
+    // Normalise Date objects → plain strings so the browser inputs accept them
+    const clean = rows.map(row => row.map(cell => {
+      if (cell instanceof Date) {
+        const y=cell.getFullYear(), m=String(cell.getMonth()+1).padStart(2,'0'), d=String(cell.getDate()).padStart(2,'0');
+        return `${y}-${m}-${d}`;
+      }
+      return cell;
+    }));
+    return out({ trades: clean });
   } catch(err) { return out({ error: err.message }); }
 }
 
