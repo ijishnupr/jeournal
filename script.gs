@@ -33,6 +33,20 @@ function doPost(e) {
                    url: 'https://drive.google.com/file/d/' + file.getId() + '/view' });
     }
 
+    if (data.type === 'update') {
+      const ss    = SpreadsheetApp.getActiveSpreadsheet();
+      const sheet = ss.getSheetByName(SHEET_NAME);
+      if (!sheet) return out({ error: 'Sheet not found' });
+      const values = sheet.getDataRange().getValues();
+      for (let i = 1; i < values.length; i++) {
+        if (String(values[i][0]) === String(data.timestamp)) {
+          sheet.getRange(i + 1, 1, 1, data.row.length).setValues([data.row]);
+          return out({ success: true });
+        }
+      }
+      return out({ error: 'Trade not found — it may have been deleted' });
+    }
+
     if (data.type === 'trade') {
       const ss    = SpreadsheetApp.getActiveSpreadsheet();
       let sheet   = ss.getSheetByName(SHEET_NAME);

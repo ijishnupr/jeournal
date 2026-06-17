@@ -211,8 +211,12 @@ function out(o){return ContentService.createTextOutput(JSON.stringify(o)).setMim
     <!-- NEW TRADE -->
     <div id="tab-new" class="tab-content active">
       <div class="card">
+        <div id="editBanner" class="hidden" style="background:#fffbeb;border-bottom:1px solid #fcd34d;padding:10px 24px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:.875rem;color:#92400e;font-weight:500">✏ Editing trade — changes will overwrite the original row in your sheet</span>
+          <button class="btn btn-outline btn-sm" onclick="cancelEdit()">✕ Cancel Edit</button>
+        </div>
         <div class="card-header">
-          <h2>Log a Trade</h2>
+          <h2 id="formTitle">Log a Trade</h2>
           <div class="pnl-live hidden" id="pnlLive" style="flex-direction:column;align-items:flex-end;gap:2px">
             <div style="display:flex;justify-content:space-between;width:100%;gap:16px">
               <span class="pnl-lbl">Gross P&amp;L</span>
@@ -335,7 +339,7 @@ function out(o){return ContentService.createTextOutput(JSON.stringify(o)).setMim
               <th>Entry</th><th>Exit</th><th>Qty</th>
               <th>Gross P&amp;L</th><th>Net P&amp;L</th>
               <th>Duration</th><th>Charges</th>
-              <th>Setup</th><th>Rating</th><th>Chart</th>
+              <th>Setup</th><th>Rating</th><th>Chart</th><th></th>
             </tr></thead>
             <tbody id="tbody"></tbody>
           </table>
@@ -384,6 +388,8 @@ function out(o){return ContentService.createTextOutput(JSON.stringify(o)).setMim
 let GAS_URL = localStorage.getItem('tj_gas_url') || '';
 let trades = [];
 let imgFile = null;
+let editingTs = null;       // timestamp of trade being edited
+let editingImg = { url:'', driveId:'' }; // existing image when editing
 
 const HEADERS = ['Timestamp','Date','Entry Time','Exit Time','Time Taken',
   'Symbol','Market','Direction','Entry Price','Exit Price','Quantity',
@@ -534,8 +540,15 @@ async function submitTrade(e){
       netPnl=(raw-charges).toFixed(2);
     }
     const rating=document.querySelector('input[name="rating"]:checked')?.value||'3';
+
+    // In edit mode keep existing image if no new file chosen
+    if(editingTs && !imgFile && editingImg.driveId){
+      imgUrl=editingImg.url; driveId=editingImg.driveId;
+    }
+
+    const ts=editingTs || new Date().toISOString();
     const row=[
-      new Date().toISOString(),
+      ts,
       document.getElementById('fDate').value,
       document.getElementById('fTime').value,
       document.getElementById('fExitTime').value,
@@ -551,10 +564,14 @@ async function submitTrade(e){
       document.getElementById('fMistakes').value,
       rating, imgUrl, driveId
     ];
-    const res=await gasPost({type:'trade',row});
+
+    const payload=editingTs
+      ? {type:'update', timestamp:editingTs, row}
+      : {type:'trade', row};
+    const res=await gasPost(payload);
     if(res.error) throw new Error(res.error);
-    toast('Trade saved!','ok');
-    resetForm();
+    toast(editingTs?'Trade updated!':'Trade saved!','ok');
+    cancelEdit(); // resets form + clears edit state
     trades=[];
   } catch(err){
     toast('Error: '+(err.message||'Unknown'),'err');
@@ -596,6 +613,58 @@ function toBase64(file){
   });
 }
 
+// ─── EDIT ────────────────────────────────────────────────────
+function editTrade(ts){
+  const t=trades.find(x=>x.ts===ts);
+  if(!t) return;
+  goTab('new');
+  editingTs=ts;
+  editingImg={url:t.imgUrl||'', driveId:t.driveId||''};
+
+  document.getElementById('editBanner').classList.remove('hidden');
+  document.getElementById('formTitle').textContent='Edit Trade';
+  document.getElementById('saveBtn').textContent='Update Trade';
+
+  document.getElementById('fDate').value=t.date;
+  document.getElementById('fTime').value=t.time;
+  document.getElementById('fExitTime').value=t.exitTime||'';
+  document.getElementById('fTimeTaken').value=t.timeTaken||'';
+  document.getElementById('fSymbol').value=t.sym;
+  document.getElementById('fMarket').value=t.mkt||'Stocks';
+  document.getElementById('fDir').value=t.dir||'Long';
+  document.getElementById('fQty').value=t.qty;
+  document.getElementById('fEntry').value=t.entry;
+  document.getElementById('fExit').value=t.exit||'';
+  document.getElementById('fSL').value=t.sl||'';
+  document.getElementById('fTP').value=t.tp||'';
+  document.getElementById('fCharges').value=t.charges||12;
+  document.getElementById('fSetup').value=t.setup||'';
+  document.getElementById('fNotes').value=t.notes||'';
+  document.getElementById('fMistakes').value=t.mistakes||'';
+
+  const rEl=document.querySelector(`input[name="rating"][value="${t.rating||'3'}"]`);
+  if(rEl) rEl.checked=true;
+
+  if(t.driveId){
+    document.getElementById('previewImg').src=`https://lh3.googleusercontent.com/d/${t.driveId}`;
+    document.getElementById('uploadArea').classList.add('hidden');
+    document.getElementById('imgPreview').style.display='block';
+    imgFile=null; // no new file yet — will keep existing
+  }
+
+  calcPnl();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function cancelEdit(){
+  editingTs=null;
+  editingImg={url:'',driveId:''};
+  document.getElementById('editBanner').classList.add('hidden');
+  document.getElementById('formTitle').textContent='Log a Trade';
+  document.getElementById('saveBtn').textContent='Save Trade';
+  resetForm();
+}
+
 // ─── HISTORY ─────────────────────────────────────────────────
 function renderHistory(){
   const sym=document.getElementById('fltSym').value.toUpperCase();
@@ -611,7 +680,7 @@ function renderHistory(){
 
   const tbody=document.getElementById('tbody');
   if(!list.length){
-    tbody.innerHTML=`<tr><td colspan="14"><div class="empty">
+    tbody.innerHTML=`<tr><td colspan="15"><div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
       <p>${trades.length===0?'No trades yet — log your first trade!':'No trades match filters.'}</p>
     </div></td></tr>`;
@@ -641,6 +710,7 @@ function renderHistory(){
       <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.setup||'—'}</td>
       <td style="color:#f59e0b;font-size:.8rem;letter-spacing:-1px">${stars}</td>
       <td>${img}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="editTrade('${t.ts}')">✏ Edit</button></td>
     </tr>`;
   }).join('');
 }
