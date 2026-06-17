@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trade Journal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#2563eb;--primary-d:#1d4ed8;
+  --success:#16a34a;--danger:#dc2626;
+  --bg:#f1f5f9;--card:#fff;--border:#e2e8f0;
+  --text:#0f172a;--muted:#94a3b8;--sec:#475569;
+  --shadow:0 1px 3px rgba(0,0,0,.1);--shadow-lg:0 10px 15px -3px rgba(0,0,0,.12)
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+
+/* NAV */
+.nav{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.nav-brand{font-size:1.2rem;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:8px}
+.nav-right{display:flex;align-items:center;gap:10px}
+
+/* BUTTONS */
+.btn{padding:8px 16px;border-radius:8px;font-size:.875rem;font-weight:500;cursor:pointer;border:none;transition:.15s;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-d)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}.btn-outline:hover{background:var(--bg)}
+.btn-lg{padding:12px 24px;font-size:1rem;border-radius:10px}
+.btn-sm{padding:5px 10px;font-size:.8rem}
+
+/* SETUP SCREEN */
+.setup-screen{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 60px);padding:24px}
+.setup-card{background:var(--card);border-radius:16px;padding:40px;max-width:680px;width:100%;box-shadow:var(--shadow-lg);border:1px solid var(--border)}
+.setup-card h1{font-size:1.4rem;margin-bottom:6px}
+.setup-card p.sub{color:var(--sec);margin-bottom:28px;font-size:.95rem}
+.steps{counter-reset:s;list-style:none}
+.steps li{counter-increment:s;display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:.9rem;color:var(--sec)}
+.steps li:last-child{border-bottom:none}
+.steps li::before{content:counter(s);background:var(--primary);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;margin-top:1px}
+.steps li strong{color:var(--text)}
+code{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:.85em;color:var(--primary);border:1px solid var(--border)}
+pre{background:#0f172a;color:#e2e8f0;padding:16px;border-radius:10px;font-size:.82rem;overflow-x:auto;line-height:1.6;margin:12px 0}
+.url-input-row{display:flex;gap:8px;margin-top:20px}
+.url-input-row input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;font-family:inherit}
+.url-input-row input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.copy-btn{padding:4px 10px;background:#1e293b;color:#e2e8f0;border:none;border-radius:6px;font-size:.75rem;cursor:pointer;font-family:monospace}
+.copy-btn:hover{background:#334155}
+
+/* TABS */
+.tabs{display:flex;gap:2px;padding:0 24px;background:var(--card);border-bottom:1px solid var(--border)}
+.tab{padding:14px 18px;font-size:.875rem;font-weight:500;color:var(--sec);cursor:pointer;border-bottom:2px solid transparent;transition:.15s;white-space:nowrap}
+.tab:hover{color:var(--text)}.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+/* CONTENT */
+.content{padding:24px;max-width:1200px;margin:0 auto}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* CARD */
+.card{background:var(--card);border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.card-header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.card-header h2{font-size:1.05rem;font-weight:600}
+.card-body{padding:24px}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr}}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg.full{grid-column:1/-1}
+label{font-size:.85rem;font-weight:500;color:var(--sec)}
+input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;color:var(--text);background:var(--card);width:100%;font-family:inherit;transition:.15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+textarea{resize:vertical;min-height:72px}
+
+/* STARS */
+.stars{display:flex;flex-direction:row-reverse;gap:2px;justify-content:flex-end}
+.stars input{display:none}
+.stars label{font-size:1.6rem;cursor:pointer;color:var(--muted);line-height:1;transition:.1s}
+.stars input:checked ~ label,.stars label:hover,.stars label:hover ~ label{color:#f59e0b}
+
+/* IMAGE UPLOAD */
+.upload-area{border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:.15s;color:var(--muted)}
+.upload-area:hover,.upload-area.drag{border-color:var(--primary);background:#eff6ff;color:var(--primary)}
+.img-preview{display:none;position:relative}
+.img-preview img{width:100%;max-height:220px;object-fit:cover;border-radius:8px}
+.rm-img{position:absolute;top:8px;right:8px;background:var(--danger);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center}
+
+/* PNL LIVE */
+.pnl-live{background:var(--bg);border-radius:8px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;min-width:220px}
+.pnl-lbl{font-size:.8rem;color:var(--sec)}
+.pnl-val{font-size:1.2rem;font-weight:700}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:var(--shadow)}
+.stat-label{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.stat-val{font-size:1.6rem;font-weight:700}
+.pos{color:var(--success)}.neg{color:var(--danger)}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.875rem}
+th{padding:11px 14px;text-align:left;font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:var(--bg);border-bottom:1px solid var(--border)}
+td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8fafc}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:.72rem;font-weight:600}
+.b-long{background:#dcfce7;color:#166534}.b-short{background:#fee2e2;color:#991b1b}
+.ppos{color:var(--success);font-weight:600}.pneg{color:var(--danger);font-weight:600}
+
+/* FILTERS */
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.filters input,.filters select{max-width:160px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit}
+
+/* LIGHTBOX */
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:2000;align-items:center;justify-content:center}
+.lightbox.on{display:flex}
+.lightbox img{max-width:90vw;max-height:90vh;border-radius:8px}
+.lb-close{position:fixed;top:18px;right:22px;background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:50%;width:38px;height:38px;font-size:1.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* LOADING */
+.loading-bg{display:none;position:fixed;inset:0;background:rgba(255,255,255,.82);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.loading-bg.on{display:flex}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+.toasts{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:10px;font-size:.875rem;min-width:240px;animation:slideIn .3s ease}
+.toast.ok{border-left:4px solid var(--success)}.toast.err{border-left:4px solid var(--danger)}.toast.info{border-left:4px solid var(--primary)}
+@keyframes slideIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+.empty{text-align:center;padding:40px;color:var(--muted)}
+.empty svg{width:52px;height:52px;margin-bottom:12px}
+.hidden{display:none!important}
+@media(max-width:768px){.content{padding:14px}.card-body{padding:16px}.tabs{overflow-x:auto}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-brand">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Trade Journal
+  </div>
+  <div class="nav-right">
+    <button class="btn btn-outline" onclick="openSetup()">✏ Edit Credentials</button>
+    <button class="btn btn-outline" onclick="copyUrl()">⎘ Copy URL</button>
+  </div>
+</nav>
+
+<!-- SETUP SCREEN -->
+<div id="setupScreen" class="setup-screen">
+  <div class="setup-card">
+    <h1>Welcome to Trade Journal</h1>
+    <p class="sub">No OAuth or API keys needed — just paste a script into your Google Sheet and you're ready.</p>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>Open your Google Sheet</strong> → Extensions → Apps Script<br>
+          <span style="color:var(--muted);font-size:.85rem">Delete any existing code in the editor</span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Paste this script</strong> and click Save (Ctrl+S)
+          <div style="position:relative">
+            <pre id="scriptCode">const SHEET_NAME = 'Trades';
+const HEADERS = ['Timestamp','Date','Entry Time','Exit Time','Time Taken','Symbol','Market','Direction','Entry Price','Exit Price','Quantity','Gross P&L','P&L %','Net P&L','Stop Loss','Take Profit','Charges','Strategy','Notes','Mistakes','Rating','Image URL','Drive File ID'];
+function doGet(e){try{const s=SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);if(!s||s.getLastRow()<=1)return out({trades:[]});const r=s.getDataRange().getValues();r.shift();return out({trades:r})}catch(e){return out({error:e.message})}}
+function doPost(e){try{const d=JSON.parse(e.postData.contents);if(d.type==='image'){const b=Utilities.newBlob(Utilities.base64Decode(d.base64),d.mimeType,d.filename);const f=DriveApp.createFile(b);f.setSharing(DriveApp.Access.ANYONE_WITH_LINK,DriveApp.Permission.VIEW);return out({success:true,fileId:f.getId(),url:'https://drive.google.com/file/d/'+f.getId()+'/view'})}if(d.type==='trade'){const ss=SpreadsheetApp.getActiveSpreadsheet();let s=ss.getSheetByName(SHEET_NAME);if(!s)s=ss.insertSheet(SHEET_NAME);if(s.getLastRow()===0)s.appendRow(HEADERS);s.appendRow(d.row);return out({success:true})}return out({error:'Unknown type'})}catch(e){return out({error:e.message})}}
+function out(o){return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON)}</pre>
+            <button class="copy-btn" style="position:absolute;top:8px;right:8px" onclick="copyScript()">Copy</button>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Deploy</strong> → Click <strong>Deploy</strong> button (top right) → <strong>New deployment</strong><br>
+          Set type to <strong>Web app</strong> → Execute as: <strong>Me</strong> → Who has access: <strong>Anyone</strong> → Deploy<br>
+          <span style="color:var(--muted);font-size:.85rem">Authorize when prompted — this lets the script write to your own sheet</span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Copy the Web app URL</strong> and paste it below
+        </div>
+      </li>
+    </ol>
+
+    <div class="url-input-row">
+      <input type="text" id="urlInput" placeholder="https://script.google.com/macros/s/.../exec">
+      <button class="btn btn-primary" onclick="saveUrl()">Connect →</button>
+    </div>
+    <p style="font-size:.78rem;color:var(--muted);margin-top:8px">The URL is stored locally in your browser — never sent anywhere.</p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" class="hidden">
+  <div class="tabs">
+    <div class="tab active" onclick="goTab('new')">＋ New Trade</div>
+    <div class="tab" onclick="goTab('history')">History</div>
+    <div class="tab" onclick="goTab('stats')">Stats</div>
+  </div>
+
+  <div class="content">
+
+    <!-- NEW TRADE -->
+    <div id="tab-new" class="tab-content active">
+      <div class="card">
+        <div class="card-header">
+          <h2>Log a Trade</h2>
+          <div class="pnl-live hidden" id="pnlLive" style="flex-direction:column;align-items:flex-end;gap:2px">
+            <div style="display:flex;justify-content:space-between;width:100%;gap:16px">
+              <span class="pnl-lbl">Gross P&amp;L</span>
+              <span class="pnl-val" id="pnlGross" style="font-size:1rem">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;width:100%;gap:16px">
+              <span class="pnl-lbl">Net P&amp;L <span style="font-size:.7rem">(after charges)</span></span>
+              <span class="pnl-val" id="pnlNet">—</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <form id="tradeForm" onsubmit="submitTrade(event)">
+            <div class="form-grid">
+              <div class="fg"><label>Date *</label><input type="date" id="fDate" required></div>
+              <div class="fg"><label>Entry Time</label><input type="time" id="fTime" oninput="calcPnl()"></div>
+
+              <div class="fg"><label>Symbol / Ticker *</label><input type="text" id="fSymbol" placeholder="AAPL, BTC/USD…" required style="text-transform:uppercase"></div>
+              <div class="fg"><label>Market</label>
+                <select id="fMarket">
+                  <option>Stocks</option><option>Crypto</option><option>Forex</option>
+                  <option>Options</option><option>Futures</option><option>Indices</option><option>Other</option>
+                </select>
+              </div>
+
+              <div class="fg"><label>Direction *</label>
+                <select id="fDir" required onchange="calcPnl()">
+                  <option value="Long">Long (Buy)</option>
+                  <option value="Short">Short (Sell)</option>
+                </select>
+              </div>
+              <div class="fg"><label>Quantity *</label><input type="number" id="fQty" step="any" min="0" placeholder="100" required oninput="calcPnl()"></div>
+
+              <div class="fg"><label>Entry Price *</label><input type="number" id="fEntry" step="any" min="0" placeholder="0.00" required oninput="calcPnl()"></div>
+              <div class="fg"><label>Exit Price <span style="font-weight:400;color:var(--muted)">(blank = open position)</span></label>
+                <input type="number" id="fExit" step="any" min="0" placeholder="0.00" oninput="calcPnl()">
+              </div>
+
+              <div class="fg"><label>Exit Time</label><input type="time" id="fExitTime" oninput="calcPnl()"></div>
+              <div class="fg"><label>Time Taken <span style="font-weight:400;color:var(--muted)">(auto)</span></label>
+                <input type="text" id="fTimeTaken" readonly placeholder="—" style="background:var(--bg);color:var(--sec)">
+              </div>
+
+              <div class="fg"><label>Stop Loss</label><input type="number" id="fSL" step="any" min="0" placeholder="0.00"></div>
+              <div class="fg"><label>Take Profit</label><input type="number" id="fTP" step="any" min="0" placeholder="0.00"></div>
+
+              <div class="fg"><label>Trade Charges (₹) <span style="font-weight:400;color:var(--muted)">Groww flat fee</span></label>
+                <input type="number" id="fCharges" step="any" min="0" value="12" oninput="calcPnl()">
+              </div>
+
+              <div class="fg"><label>Strategy / Setup</label><input type="text" id="fSetup" placeholder="Breakout, Mean Reversion…"></div>
+              <div class="fg"><label>Trade Rating</label>
+                <div class="stars">
+                  <input type="radio" id="r5" name="rating" value="5"><label for="r5">★</label>
+                  <input type="radio" id="r4" name="rating" value="4"><label for="r4">★</label>
+                  <input type="radio" id="r3" name="rating" value="3" checked><label for="r3">★</label>
+                  <input type="radio" id="r2" name="rating" value="2"><label for="r2">★</label>
+                  <input type="radio" id="r1" name="rating" value="1"><label for="r1">★</label>
+                </div>
+              </div>
+
+              <div class="fg full"><label>Trade Rationale / Notes</label><textarea id="fNotes" placeholder="Why did you take this trade?"></textarea></div>
+              <div class="fg full"><label>Mistakes / Lessons Learned</label><textarea id="fMistakes" placeholder="What could you have done better?"></textarea></div>
+
+              <div class="fg full">
+                <label>Chart Screenshot</label>
+                <div id="uploadArea" class="upload-area"
+                     onclick="document.getElementById('fileIn').click()"
+                     ondragover="event.preventDefault();this.classList.add('drag')"
+                     ondragleave="this.classList.remove('drag')"
+                     ondrop="onDrop(event)">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;margin:0 auto">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  <p style="font-weight:500;margin-top:8px">Drop chart screenshot here or click to browse</p>
+                  <p style="font-size:.8rem;color:var(--muted);margin-top:4px">Also supports Ctrl+V paste from clipboard</p>
+                </div>
+                <div class="img-preview" id="imgPreview">
+                  <img id="previewImg" src="" alt="preview">
+                  <button type="button" class="rm-img" onclick="clearImage()">×</button>
+                </div>
+                <input type="file" id="fileIn" accept="image/*" style="display:none" onchange="onFileSelect(event)">
+              </div>
+            </div>
+
+            <div style="margin-top:22px;display:flex;gap:10px;justify-content:flex-end">
+              <button type="button" class="btn btn-outline" onclick="resetForm()">Clear</button>
+              <button type="submit" class="btn btn-primary" id="saveBtn">Save Trade</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="tab-history" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2>Trade History</h2>
+          <button class="btn btn-outline btn-sm" onclick="loadTrades()">↻ Refresh</button>
+        </div>
+        <div class="card-body" style="padding-bottom:8px">
+          <div class="filters">
+            <input type="text" id="fltSym" placeholder="Symbol…" oninput="renderHistory()">
+            <select id="fltDir" onchange="renderHistory()"><option value="">All Directions</option><option>Long</option><option>Short</option></select>
+            <select id="fltMkt" onchange="renderHistory()">
+              <option value="">All Markets</option>
+              <option>Stocks</option><option>Crypto</option><option>Forex</option><option>Options</option><option>Futures</option>
+            </select>
+            <input type="date" id="fltFrom" onchange="renderHistory()">
+            <input type="date" id="fltTo" onchange="renderHistory()">
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Date</th><th>Symbol</th><th>Market</th><th>Dir</th>
+              <th>Entry</th><th>Exit</th><th>Qty</th>
+              <th>Gross P&amp;L</th><th>Net P&amp;L</th>
+              <th>Duration</th><th>Charges</th>
+              <th>Setup</th><th>Rating</th><th>Chart</th>
+            </tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div id="tab-stats" class="tab-content">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total Trades</div><div class="stat-val" id="sTot">—</div></div>
+        <div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-val" id="sWR">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total P&amp;L</div><div class="stat-val" id="sPnl">—</div></div>
+        <div class="stat-card"><div class="stat-label">Avg Win</div><div class="stat-val pos" id="sAW">—</div></div>
+        <div class="stat-card"><div class="stat-label">Avg Loss</div><div class="stat-val neg" id="sAL">—</div></div>
+        <div class="stat-card"><div class="stat-label">Profit Factor</div><div class="stat-val" id="sPF">—</div></div>
+        <div class="stat-card"><div class="stat-label">Best Trade</div><div class="stat-val pos" id="sBest">—</div></div>
+        <div class="stat-card"><div class="stat-label">Worst Trade</div><div class="stat-val neg" id="sWorst">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>By Market</h2></div>
+        <div class="card-body" id="mktStats"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lb-close">×</button>
+  <img id="lbImg" src="" alt="chart">
+</div>
+
+<!-- LOADING -->
+<div class="loading-bg" id="loading">
+  <div class="spinner"></div>
+  <span id="loadTxt" style="color:var(--sec);font-size:.9rem">Loading…</span>
+</div>
+
+<!-- TOASTS -->
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ─── STATE ──────────────────────────────────────────────────
+let GAS_URL = localStorage.getItem('tj_gas_url') || '';
+let trades = [];
+let imgFile = null;
+
+const HEADERS = ['Timestamp','Date','Entry Time','Exit Time','Time Taken',
+  'Symbol','Market','Direction','Entry Price','Exit Price','Quantity',
+  'Gross P&L','P&L %','Net P&L','Stop Loss','Take Profit','Charges',
+  'Strategy','Notes','Mistakes','Rating','Image URL','Drive File ID'];
+
+// ─── INIT ───────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  document.getElementById('fDate').value = today();
+  document.getElementById('urlInput').value = GAS_URL;
+  if (GAS_URL) { showApp(); loadTrades(); }
+
+  document.addEventListener('paste', e => {
+    if (!GAS_URL) return;
+    for (const item of (e.clipboardData?.items || [])) {
+      if (item.type.startsWith('image/')) { setImage(item.getAsFile()); break; }
+    }
+  });
+});
+
+function today(){ return new Date().toISOString().split('T')[0] }
+
+// ─── SETUP ──────────────────────────────────────────────────
+function saveUrl(){
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url.startsWith('https://script.google.com')){ toast('Paste the full Apps Script web app URL','err'); return; }
+  localStorage.setItem('tj_gas_url', url);
+  GAS_URL = url;
+  showApp();
+  loadTrades();
+}
+
+function showApp(){
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('mainApp').classList.remove('hidden');
+}
+
+function openSetup(){
+  document.getElementById('urlInput').value = GAS_URL;
+  document.getElementById('setupScreen').style.display = 'flex';
+  document.getElementById('mainApp').classList.add('hidden');
+}
+
+function copyUrl(){
+  if (!GAS_URL){ toast('No URL saved yet','err'); return; }
+  navigator.clipboard.writeText(GAS_URL).then(()=>toast('URL copied','ok')).catch(()=>toast('Copy failed','err'));
+}
+
+function copyScript(){
+  const text = document.getElementById('scriptCode').textContent;
+  navigator.clipboard.writeText(text).then(()=>toast('Script copied — paste into Apps Script editor','ok')).catch(()=>toast('Copy failed','err'));
+}
+
+// ─── TABS ────────────────────────────────────────────────────
+function goTab(name){
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['new','history','stats'][i]===name));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if (name==='history') renderHistory();
+  if (name==='stats') renderStats();
+}
+
+// ─── IMAGE ───────────────────────────────────────────────────
+function onFileSelect(e){ if(e.target.files[0]) setImage(e.target.files[0]) }
+function onDrop(e){
+  e.preventDefault(); document.getElementById('uploadArea').classList.remove('drag');
+  const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('image/')) setImage(f);
+}
+function setImage(f){
+  imgFile=f;
+  const r=new FileReader();
+  r.onload=ev=>{
+    document.getElementById('previewImg').src=ev.target.result;
+    document.getElementById('uploadArea').classList.add('hidden');
+    document.getElementById('imgPreview').style.display='block';
+  };
+  r.readAsDataURL(f);
+}
+function clearImage(){
+  imgFile=null;
+  document.getElementById('fileIn').value='';
+  document.getElementById('previewImg').src='';
+  document.getElementById('uploadArea').classList.remove('hidden');
+  document.getElementById('imgPreview').style.display='none';
+}
+
+// ─── P&L CALC ────────────────────────────────────────────────
+function calcPnl(){
+  const entry=+document.getElementById('fEntry').value;
+  const exit=+document.getElementById('fExit').value;
+  const qty=+document.getElementById('fQty').value;
+  const dir=document.getElementById('fDir').value;
+  const charges=+document.getElementById('fCharges').value||0;
+  const el=document.getElementById('pnlLive');
+
+  // Time taken
+  const entryT=document.getElementById('fTime').value;
+  const exitT=document.getElementById('fExitTime').value;
+  if(entryT&&exitT){
+    const [eh,em]=entryT.split(':').map(Number);
+    const [xh,xm]=exitT.split(':').map(Number);
+    const diff=(xh*60+xm)-(eh*60+em);
+    if(diff>0){
+      const h=Math.floor(diff/60), m=diff%60;
+      document.getElementById('fTimeTaken').value=h>0?`${h}h ${m}m`:`${m}m`;
+    } else { document.getElementById('fTimeTaken').value=''; }
+  } else { document.getElementById('fTimeTaken').value=''; }
+
+  if(!entry||!exit||!qty){el.classList.add('hidden');return;}
+  const gross=dir==='Long'?(exit-entry)*qty:(entry-exit)*qty;
+  const net=gross-charges;
+  const pct=((exit-entry)/entry*100)*(dir==='Long'?1:-1);
+  el.classList.remove('hidden');
+
+  const gEl=document.getElementById('pnlGross');
+  gEl.textContent=`${gross>=0?'+':''}${gross.toFixed(2)} (${pct.toFixed(2)}%)`;
+  gEl.style.color=gross>=0?'var(--success)':'var(--danger)';
+
+  const nEl=document.getElementById('pnlNet');
+  nEl.textContent=`${net>=0?'+':''}${net.toFixed(2)}`;
+  nEl.style.color=net>=0?'var(--success)':'var(--danger)';
+}
+
+// ─── SUBMIT ──────────────────────────────────────────────────
+async function submitTrade(e){
+  e.preventDefault();
+  loading('Saving trade…');
+  try {
+    let imgUrl='', driveId='';
+    if(imgFile){
+      loading('Uploading chart image…');
+      const b64 = await toBase64(imgFile);
+      const res = await gasPost({ type:'image', base64:b64.split(',')[1], mimeType:imgFile.type, filename:imgFile.name });
+      if(res.error) throw new Error(res.error);
+      driveId=res.fileId; imgUrl=res.url;
+    }
+    loading('Writing to Google Sheets…');
+    const entry=+document.getElementById('fEntry').value||0;
+    const exit=+document.getElementById('fExit').value||null;
+    const qty=+document.getElementById('fQty').value||0;
+    const dir=document.getElementById('fDir').value;
+    const charges=+document.getElementById('fCharges').value||0;
+    let grossPnl='',pct='',netPnl='';
+    if(exit){
+      const raw=dir==='Long'?(exit-entry)*qty:(entry-exit)*qty;
+      const rawP=((exit-entry)/entry*100)*(dir==='Long'?1:-1);
+      grossPnl=raw.toFixed(2); pct=rawP.toFixed(2)+'%';
+      netPnl=(raw-charges).toFixed(2);
+    }
+    const rating=document.querySelector('input[name="rating"]:checked')?.value||'3';
+    const row=[
+      new Date().toISOString(),
+      document.getElementById('fDate').value,
+      document.getElementById('fTime').value,
+      document.getElementById('fExitTime').value,
+      document.getElementById('fTimeTaken').value,
+      document.getElementById('fSymbol').value.toUpperCase(),
+      document.getElementById('fMarket').value,
+      dir, entry, exit||'', qty, grossPnl, pct, netPnl,
+      document.getElementById('fSL').value||'',
+      document.getElementById('fTP').value||'',
+      charges,
+      document.getElementById('fSetup').value,
+      document.getElementById('fNotes').value,
+      document.getElementById('fMistakes').value,
+      rating, imgUrl, driveId
+    ];
+    const res=await gasPost({type:'trade',row});
+    if(res.error) throw new Error(res.error);
+    toast('Trade saved!','ok');
+    resetForm();
+    trades=[];
+  } catch(err){
+    toast('Error: '+(err.message||'Unknown'),'err');
+    console.error(err);
+  } finally { doneLoading(); }
+}
+
+// ─── GAS API ─────────────────────────────────────────────────
+async function gasPost(data){
+  const r=await fetch(GAS_URL,{method:'POST',body:JSON.stringify(data)});
+  return r.json();
+}
+
+async function loadTrades(){
+  if(!GAS_URL) return;
+  try {
+    const r=await fetch(GAS_URL);
+    const data=await r.json();
+    if(data.error) throw new Error(data.error);
+    trades=(data.trades||[]).map(r=>({
+      ts:r[0]||'', date:r[1]||'', time:r[2]||'', exitTime:r[3]||'', timeTaken:r[4]||'',
+      sym:r[5]||'', mkt:r[6]||'', dir:r[7]||'',
+      entry:r[8]||'', exit:r[9]||'', qty:r[10]||'',
+      pnl:r[11]||'', pct:r[12]||'', netPnl:r[13]||'',
+      sl:r[14]||'', tp:r[15]||'', charges:r[16]||'',
+      setup:r[17]||'', notes:r[18]||'', mistakes:r[19]||'',
+      rating:r[20]||'', imgUrl:r[21]||'', driveId:r[22]||''
+    }));
+    renderStats();
+  } catch(err){ toast('Load error: '+err.message,'err'); }
+}
+
+function toBase64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=e=>res(e.target.result);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+}
+
+// ─── HISTORY ─────────────────────────────────────────────────
+function renderHistory(){
+  const sym=document.getElementById('fltSym').value.toUpperCase();
+  const dir=document.getElementById('fltDir').value;
+  const mkt=document.getElementById('fltMkt').value;
+  const from=document.getElementById('fltFrom').value;
+  const to=document.getElementById('fltTo').value;
+
+  let list=trades.filter(t=>
+    (!sym||t.sym.includes(sym))&&(!dir||t.dir===dir)&&
+    (!mkt||t.mkt===mkt)&&(!from||t.date>=from)&&(!to||t.date<=to)
+  ).sort((a,b)=>b.date.localeCompare(a.date)||b.ts.localeCompare(a.ts));
+
+  const tbody=document.getElementById('tbody');
+  if(!list.length){
+    tbody.innerHTML=`<tr><td colspan="14"><div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+      <p>${trades.length===0?'No trades yet — log your first trade!':'No trades match filters.'}</p>
+    </div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML=list.map(t=>{
+    const gross=parseFloat(t.pnl);
+    const net=parseFloat(t.netPnl);
+    const gcls=t.pnl?(gross>=0?'ppos':'pneg'):'';
+    const ncls=t.netPnl?(net>=0?'ppos':'pneg'):'';
+    const gstr=t.pnl?`${gross>=0?'+':''}${t.pnl} (${t.pct})`:`<span style="color:var(--muted)">Open</span>`;
+    const nstr=t.netPnl?`${net>=0?'+':''}${t.netPnl}`:`<span style="color:var(--muted)">—</span>`;
+    const timeStr=t.time&&t.exitTime?`${t.time}–${t.exitTime}`:(t.time||'—');
+    const stars=t.rating?'★'.repeat(+t.rating)+'☆'.repeat(5-+t.rating):'';
+    const img=t.driveId
+      ?`<button class="btn btn-outline btn-sm" onclick="openLightbox('https://lh3.googleusercontent.com/d/${t.driveId}')">View</button>`:'—';
+    return `<tr>
+      <td>${t.date}<br><small style="color:var(--muted)">${timeStr}</small></td>
+      <td><strong>${t.sym}</strong></td><td>${t.mkt}</td>
+      <td><span class="badge ${t.dir==='Long'?'b-long':'b-short'}">${t.dir}</span></td>
+      <td>${t.entry}</td><td>${t.exit||'—'}</td><td>${t.qty}</td>
+      <td class="${gcls}">${gstr}</td>
+      <td class="${ncls}">${nstr}</td>
+      <td><small>${t.timeTaken||'—'}</small></td>
+      <td><small>${t.charges?'₹'+t.charges:'—'}</small></td>
+      <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.setup||'—'}</td>
+      <td style="color:#f59e0b;font-size:.8rem;letter-spacing:-1px">${stars}</td>
+      <td>${img}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── STATS ───────────────────────────────────────────────────
+function renderStats(){
+  const closed=trades.filter(t=>t.pnl!=='');
+  const wins=closed.filter(t=>+t.pnl>0);
+  const losses=closed.filter(t=>+t.pnl<0);
+  const sum=arr=>arr.reduce((s,t)=>s+(+t.pnl),0);
+  const totalPnl=sum(closed);
+  const winRate=closed.length?(wins.length/closed.length*100).toFixed(1):null;
+  const avgWin=wins.length?sum(wins)/wins.length:null;
+  const avgLoss=losses.length?sum(losses)/losses.length:null;
+  const gW=sum(wins), gL=Math.abs(sum(losses));
+  const pf=gL>0?(gW/gL).toFixed(2):wins.length?'∞':null;
+  const best=wins.length?Math.max(...wins.map(t=>+t.pnl)):null;
+  const worst=losses.length?Math.min(...losses.map(t=>+t.pnl)):null;
+  const fmt=(v,plus=false)=>v===null?'—':`${plus&&v>=0?'+':''}${v.toFixed(2)}`;
+
+  document.getElementById('sTot').textContent=`${trades.length} (${closed.length} closed)`;
+  document.getElementById('sWR').textContent=winRate?winRate+'%':'—';
+  const pEl=document.getElementById('sPnl');
+  pEl.textContent=closed.length?fmt(totalPnl,true):'—';
+  pEl.className='stat-val '+(totalPnl>=0?'pos':'neg');
+  document.getElementById('sAW').textContent=avgWin?fmt(avgWin,true):'—';
+  document.getElementById('sAL').textContent=avgLoss?fmt(avgLoss):'—';
+  document.getElementById('sPF').textContent=pf||'—';
+  document.getElementById('sBest').textContent=best?fmt(best,true):'—';
+  document.getElementById('sWorst').textContent=worst?fmt(worst):'—';
+
+  const byMkt={};
+  closed.forEach(t=>{
+    const m=t.mkt||'Other';
+    if(!byMkt[m])byMkt[m]={n:0,pnl:0,wins:0};
+    byMkt[m].n++;byMkt[m].pnl+=+t.pnl;if(+t.pnl>0)byMkt[m].wins++;
+  });
+  const entries=Object.entries(byMkt);
+  document.getElementById('mktStats').innerHTML=entries.length
+    ?`<table><thead><tr><th>Market</th><th>Trades</th><th>Win Rate</th><th>Total P&amp;L</th></tr></thead><tbody>
+       ${entries.map(([m,d])=>`<tr><td>${m}</td><td>${d.n}</td>
+         <td>${(d.wins/d.n*100).toFixed(1)}%</td>
+         <td class="${d.pnl>=0?'ppos':'pneg'}">${d.pnl>=0?'+':''}${d.pnl.toFixed(2)}</td>
+       </tr>`).join('')}</tbody></table>`
+    :'<p style="color:var(--muted);text-align:center;padding:20px">No closed trades yet.</p>';
+}
+
+// ─── LIGHTBOX ────────────────────────────────────────────────
+function openLightbox(src){ document.getElementById('lbImg').src=src; document.getElementById('lightbox').classList.add('on') }
+function closeLightbox(){ document.getElementById('lightbox').classList.remove('on'); document.getElementById('lbImg').src='' }
+
+// ─── FORM ────────────────────────────────────────────────────
+function resetForm(){
+  document.getElementById('tradeForm').reset();
+  document.getElementById('fDate').value=today();
+  document.getElementById('fCharges').value=12;
+  document.getElementById('fTimeTaken').value='';
+  document.getElementById('r3').checked=true;
+  clearImage();
+  document.getElementById('pnlLive').classList.add('hidden');
+}
+
+// ─── UTILS ───────────────────────────────────────────────────
+function loading(txt='Loading…'){ document.getElementById('loadTxt').textContent=txt; document.getElementById('loading').classList.add('on') }
+function doneLoading(){ document.getElementById('loading').classList.remove('on') }
+
+function toast(msg,type='info'){
+  const c=document.getElementById('toasts');
+  const el=document.createElement('div');
+  el.className=`toast ${type==='ok'?'ok':type==='err'?'err':'info'}`;
+  el.innerHTML=`<span>${type==='ok'?'✓':type==='err'?'✗':'ℹ'}</span><span>${msg}</span>`;
+  c.appendChild(el);
+  setTimeout(()=>{el.style.transition='.3s';el.style.opacity='0';el.style.transform='translateX(110%)';setTimeout(()=>el.remove(),300)},4000);
+}
+</script>
+</body>
+</html>
