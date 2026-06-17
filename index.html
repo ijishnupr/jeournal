@@ -99,7 +99,7 @@ pre{background:#060d1f;color:#a5b4fc;padding:16px;border-radius:10px;font-size:.
 .tab-content{display:none}.tab-content.active{display:block}
 
 /* ── CARD ── */
-.card{background:var(--card);border-radius:14px;border:1px solid var(--border);box-shadow:var(--shadow);transition:background .25s,border-color .25s}
+.card{background:var(--card);border-radius:14px;border:1px solid var(--border);box-shadow:var(--shadow);transition:background .25s,border-color .25s;overflow:hidden}
 .card-header{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
 .card-header h2{font-size:1rem;font-weight:700;letter-spacing:.01em}
 .card-body{padding:22px}
@@ -154,9 +154,10 @@ textarea{resize:vertical;min-height:72px}
 
 /* ── TABLE ── */
 .tbl-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:.845rem}
-thead{position:sticky;top:62px;z-index:10}
+table{width:100%;border-collapse:collapse;font-size:.845rem;min-width:900px}
+thead{position:sticky;top:62px;z-index:10;background:var(--card2)}
 th{padding:11px 14px;text-align:left;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;background:var(--card2);border-bottom:1px solid var(--border);white-space:nowrap}
+@keyframes rowIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle;transition:background .1s}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--row-hover)}
@@ -862,7 +863,7 @@ function renderHistory(){
     return;
   }
 
-  tbody.innerHTML=list.map(t=>{
+  tbody.innerHTML=list.map((t,i)=>{
     const gross=parseFloat(t.pnl);
     const net=parseFloat(t.netPnl);
     const gcls=t.pnl?(gross>=0?'ppos':'pneg'):'';
@@ -873,7 +874,7 @@ function renderHistory(){
     const stars=t.rating?'★'.repeat(+t.rating)+'☆'.repeat(5-+t.rating):'';
     const img=t.driveId
       ?`<button class="btn btn-outline btn-sm" onclick="openLightbox('https://lh3.googleusercontent.com/d/${t.driveId}')">View</button>`:'—';
-    return `<tr>
+    return `<tr style="animation:rowIn .2s ease both;animation-delay:${Math.min(i*.04,.4)}s">
       <td>${t.date}<br><small style="color:var(--muted)">${timeStr}</small></td>
       <td><strong>${t.sym}</strong></td><td>${t.mkt}</td>
       <td><span class="badge ${t.dir==='Long'?'b-long':'b-short'}">${t.dir}</span></td>
