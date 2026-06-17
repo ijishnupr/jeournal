@@ -17,10 +17,18 @@ function doGet(e) {
     const rows = sheet.getDataRange().getValues();
     rows.shift(); // remove header row
     // Normalise Date objects → plain strings so the browser inputs accept them
+    // Sheets stores dates as Date and times as Date with year=1899 (epoch)
     const clean = rows.map(row => row.map(cell => {
       if (cell instanceof Date) {
+        if (cell.getFullYear() <= 1900) {
+          // Time value — format as HH:MM
+          const h = String(cell.getHours()).padStart(2,'0');
+          const mn = String(cell.getMinutes()).padStart(2,'0');
+          return h + ':' + mn;
+        }
+        // Date value — format as YYYY-MM-DD
         const y=cell.getFullYear(), m=String(cell.getMonth()+1).padStart(2,'0'), d=String(cell.getDate()).padStart(2,'0');
-        return `${y}-${m}-${d}`;
+        return y+'-'+m+'-'+d;
       }
       return cell;
     }));
