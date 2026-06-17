@@ -155,7 +155,7 @@ textarea{resize:vertical;min-height:72px}
 /* ── TABLE ── */
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:.845rem;min-width:900px}
-thead{position:sticky;top:62px;z-index:10;background:var(--card2)}
+thead{background:var(--card2)}
 th{padding:11px 14px;text-align:left;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;background:var(--card2);border-bottom:1px solid var(--border);white-space:nowrap}
 @keyframes rowIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle;transition:background .1s}
@@ -201,6 +201,19 @@ tr:hover td{background:var(--row-hover)}
 .empty{text-align:center;padding:48px 24px;color:var(--muted)}
 .empty svg{width:54px;height:54px;margin-bottom:14px;opacity:.5}
 .empty p{font-size:.9rem}
+
+/* ── CALENDAR ── */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-day-hdr{text-align:center;font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;padding:6px 0}
+.cal-cell{min-height:78px;border:1px solid var(--border);border-radius:10px;padding:9px 10px;background:var(--card2);transition:.15s}
+.cal-cell.empty{background:transparent;border-color:transparent;pointer-events:none}
+.cal-cell.has-t{cursor:default}
+.cal-cell.has-t:hover{border-color:var(--primary);box-shadow:var(--shadow)}
+.cal-cell.today{border-color:var(--primary);background:rgba(var(--primary-rgb),.06)}
+.cal-cell.today .cal-num{color:var(--primary);font-weight:800}
+.cal-num{font-size:.8rem;font-weight:600;color:var(--muted)}
+.cal-pnl{font-size:.95rem;font-weight:800;margin-top:4px;line-height:1}
+.cal-cnt{font-size:.68rem;color:var(--muted);margin-top:3px}
 
 .hidden{display:none!important}
 @media(max-width:768px){
@@ -253,7 +266,10 @@ tr:hover td{background:var(--row-hover)}
       <li>
         <div>
           <strong>Paste this script</strong> and click Save (Ctrl+S)
-          <div style="position:relative">
+          <div style="margin-top:8px">
+            <button class="btn btn-primary btn-sm" onclick="copyScript()">⎘ Copy Script</button>
+          </div>
+          <div style="display:none">
             <pre id="scriptCode">const SHEET_NAME = 'Trades';
 const HEADERS = ['Timestamp','Date','Entry Time','Exit Time','Time Taken','Symbol','Market','Direction','Entry Price','Exit Price','Quantity','Gross P&L','P&L %','Net P&L','Stop Loss','Take Profit','Charges','Strategy','Notes','Mistakes','Rating','Image URL','Drive File ID'];
 
@@ -309,7 +325,6 @@ function doPost(e) {
 }
 
 function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }</pre>
-            <button class="copy-btn" style="position:absolute;top:8px;right:8px" onclick="copyScript()">Copy</button>
           </div>
         </div>
       </li>
@@ -341,6 +356,7 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
     <div class="tab active" onclick="goTab('new')">＋ New Trade</div>
     <div class="tab" onclick="goTab('history')">History</div>
     <div class="tab" onclick="goTab('stats')">Stats</div>
+    <div class="tab" onclick="goTab('calendar')">Calendar</div>
   </div>
 
   <div class="content">
@@ -506,6 +522,23 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
       </div>
     </div>
 
+    <!-- CALENDAR -->
+    <div id="tab-calendar" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn btn-outline btn-icon" onclick="calNav(-1)">&#8592;</button>
+            <h2 id="calTitle" style="min-width:170px;text-align:center"></h2>
+            <button class="btn btn-outline btn-icon" onclick="calNav(1)">&#8594;</button>
+          </div>
+          <div id="calSummary"></div>
+        </div>
+        <div class="card-body">
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -598,11 +631,12 @@ function copyScript(){
 
 // ─── TABS ────────────────────────────────────────────────────
 function goTab(name){
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['new','history','stats'][i]===name));
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['new','history','stats','calendar'][i]===name));
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   if (name==='history') renderHistory();
   if (name==='stats') renderStats();
+  if (name==='calendar') renderCalendar();
 }
 
 // ─── IMAGE ───────────────────────────────────────────────────
@@ -932,6 +966,61 @@ function renderStats(){
          <td class="${d.pnl>=0?'ppos':'pneg'}">${d.pnl>=0?'+':''}${d.pnl.toFixed(2)}</td>
        </tr>`).join('')}</tbody></table>`
     :'<p style="color:var(--muted);text-align:center;padding:20px">No closed trades yet.</p>';
+}
+
+// ─── CALENDAR ────────────────────────────────────────────────
+const _now = new Date();
+let calYear = _now.getFullYear();
+let calMonth = _now.getMonth();
+const CAL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const CAL_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function calNav(dir){
+  calMonth += dir;
+  if(calMonth < 0){ calMonth=11; calYear--; }
+  if(calMonth > 11){ calMonth=0; calYear++; }
+  renderCalendar();
+}
+
+function renderCalendar(){
+  document.getElementById('calTitle').textContent = `${CAL_MONTHS[calMonth]} ${calYear}`;
+
+  // aggregate trades by day
+  const dayMap = {};
+  trades.forEach(t => {
+    if(!t.date) return;
+    const parts = t.date.split('-');
+    if(+parts[0]!==calYear || +parts[1]-1!==calMonth) return;
+    const d = +parts[2];
+    if(!dayMap[d]) dayMap[d]={pnl:0,count:0};
+    dayMap[d].pnl += +t.netPnl||0;
+    dayMap[d].count++;
+  });
+
+  // monthly summary
+  const mPnl = Object.values(dayMap).reduce((s,d)=>s+d.pnl,0);
+  const mCount = Object.values(dayMap).reduce((s,d)=>s+d.count,0);
+  document.getElementById('calSummary').innerHTML = mCount
+    ? `<span style="font-size:.82rem;color:var(--muted)">${mCount} trade${mCount>1?'s':''} &nbsp;·&nbsp; </span><span style="font-size:1.05rem;font-weight:800;color:${mPnl>=0?'var(--success)':'var(--danger)'}">${mPnl>=0?'+':''}${mPnl.toFixed(2)}</span>`
+    : `<span style="font-size:.82rem;color:var(--muted)">No trades this month</span>`;
+
+  const todayStr = today();
+  const [ty,tm,td] = todayStr.split('-').map(Number);
+  const firstDow = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+
+  let html = CAL_DAYS.map(d=>`<div class="cal-day-hdr">${d}</div>`).join('');
+  for(let i=0;i<firstDow;i++) html+=`<div class="cal-cell empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const data = dayMap[d];
+    const isToday = calYear===ty && calMonth+1===tm && d===td;
+    html += `<div class="cal-cell${isToday?' today':''}${data?' has-t':''}">
+      <div class="cal-num">${d}</div>
+      ${data?`<div class="cal-pnl ${data.pnl>=0?'pos':'neg'}">${data.pnl>=0?'+':''}${data.pnl.toFixed(0)}</div>
+      <div class="cal-cnt">${data.count} trade${data.count>1?'s':''}</div>`:''}
+    </div>`;
+  }
+  document.getElementById('calGrid').innerHTML = html;
 }
 
 // ─── LIGHTBOX ────────────────────────────────────────────────
