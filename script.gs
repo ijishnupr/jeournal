@@ -1,11 +1,11 @@
 // Paste this entire file into your Google Sheet's Apps Script editor
-// Extensions → Apps Script → replace everything → Save → Deploy
+// Extensions → Apps Script → replace everything → Save → Deploy as Web App
 
 const SHEET_NAME = 'Trades';
 const HEADERS = [
   'Timestamp','Date','Entry Time','Exit Time','Time Taken',
   'Symbol','Market','Direction','Entry Price','Exit Price','Quantity',
-  'Gross P&L','P&L %','Net P&L','Stop Loss','Take Profit','Charges',
+  'P&L','P&L %','Stop Loss','Take Profit',
   'Strategy','Notes','Mistakes','Rating','Image URL','Drive File ID'
 ];
 
@@ -14,11 +14,11 @@ function doGet(e) {
     const s = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
     if (!s || s.getLastRow() <= 1) return out({ trades: [] });
     const rows = s.getDataRange().getValues();
-    rows.shift();
+    rows.shift(); // remove header row
     const clean = rows.map((row, idx) => {
       const processed = row.map((cell, colIdx) => {
         if (cell instanceof Date) {
-          if (colIdx === 0) return cell.toISOString(); // Timestamp — keep full ISO string
+          if (colIdx === 0) return cell.toISOString(); // Timestamp
           if (cell.getFullYear() <= 1900) {
             // Time value stored by Sheets — format as HH:MM
             return String(cell.getHours()).padStart(2,'0') + ':' + String(cell.getMinutes()).padStart(2,'0');
@@ -28,7 +28,7 @@ function doGet(e) {
         }
         return cell;
       });
-      processed.push(idx + 2); // sheet row number (1-indexed + header row) used for fast edits
+      processed.push(idx + 2); // append sheet row number for fast edits
       return processed;
     });
     return out({ trades: clean });
@@ -48,12 +48,12 @@ function doPost(e) {
     if (data.type === 'update') {
       const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
       if (!sheet) return out({ error: 'Sheet not found' });
-      // Prefer row-number lookup (fast, unambiguous)
+      // Fast path: update by row number
       if (data.rowNum && data.rowNum > 1 && data.rowNum <= sheet.getLastRow()) {
         sheet.getRange(data.rowNum, 1, 1, data.row.length).setValues([data.row]);
         return out({ success: true });
       }
-      // Fallback: match by timestamp string (handles Date auto-conversion)
+      // Fallback: match by timestamp
       const values = sheet.getDataRange().getValues();
       for (let i = 1; i < values.length; i++) {
         const cell = values[i][0];

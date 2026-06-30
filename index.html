@@ -287,7 +287,7 @@ tr:hover td{background:var(--row-hover)}
           </div>
           <div style="display:none">
             <pre id="scriptCode">const SHEET_NAME = 'Trades';
-const HEADERS = ['Timestamp','Date','Entry Time','Exit Time','Time Taken','Symbol','Market','Direction','Entry Price','Exit Price','Quantity','Gross P&L','P&L %','Net P&L','Stop Loss','Take Profit','Charges','Strategy','Notes','Mistakes','Rating','Image URL','Drive File ID'];
+const HEADERS = ['Timestamp','Date','Entry Time','Exit Time','Time Taken','Symbol','Market','Direction','Entry Price','Exit Price','Quantity','P&L','P&L %','Stop Loss','Take Profit','Strategy','Notes','Mistakes','Rating','Image URL','Drive File ID'];
 
 function doGet(e) {
   try {
@@ -402,7 +402,7 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
           <h2 id="formTitle">Log a Trade</h2>
           <div class="pnl-live hidden" id="pnlLive" style="flex-direction:column;align-items:flex-end;gap:2px">
             <div style="display:flex;justify-content:space-between;width:100%;gap:16px">
-              <span class="pnl-lbl">Gross P&amp;L</span>
+              <span class="pnl-lbl">P&amp;L</span>
               <span class="pnl-val" id="pnlGross" style="font-size:1rem">—</span>
             </div>
             <div style="display:flex;justify-content:space-between;width:100%;gap:16px">
@@ -527,8 +527,8 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
             <thead><tr>
               <th>Date</th><th>Symbol</th><th>Market</th><th>Dir</th>
               <th>Entry</th><th>Exit</th><th>Qty</th>
-              <th>Gross P&amp;L</th><th>Net P&amp;L</th>
-              <th>Duration</th><th>Charges</th>
+              <th>P&amp;L</th>
+              <th>Duration</th>
               <th>Setup</th><th>Rating</th><th>Chart</th><th></th>
             </tr></thead>
             <tbody id="tbody"></tbody>
@@ -627,7 +627,7 @@ let editingImg = { url:'', driveId:'' };
 
 const HEADERS = ['Timestamp','Date','Entry Time','Exit Time','Time Taken',
   'Symbol','Market','Direction','Entry Price','Exit Price','Quantity',
-  'Gross P&L','P&L %','Net P&L','Stop Loss','Take Profit','Charges',
+  'P&L','P&L %','Stop Loss','Take Profit',
   'Strategy','Notes','Mistakes','Rating','Image URL','Drive File ID'];
 
 // ─── THEME ───────────────────────────────────────────────────
@@ -778,13 +778,11 @@ async function submitTrade(e){
     const exit=+document.getElementById('fExit').value||null;
     const qty=+document.getElementById('fQty').value||0;
     const dir=document.getElementById('fDir').value;
-    const charges=+document.getElementById('fCharges').value||0;
-    let grossPnl='',pct='',netPnl='';
+    let grossPnl='',pct='';
     if(exit){
       const raw=dir==='Long'?(exit-entry)*qty:(entry-exit)*qty;
       const rawP=((exit-entry)/entry*100)*(dir==='Long'?1:-1);
       grossPnl=raw.toFixed(2); pct=rawP.toFixed(2)+'%';
-      netPnl=(raw-charges).toFixed(2);
     }
     const rating=document.querySelector('input[name="rating"]:checked')?.value||'3';
 
@@ -802,10 +800,9 @@ async function submitTrade(e){
       document.getElementById('fTimeTaken').value,
       document.getElementById('fSymbol').value.toUpperCase(),
       document.getElementById('fMarket').value,
-      dir, entry, exit||'', qty, grossPnl, pct, netPnl,
+      dir, entry, exit||'', qty, grossPnl, pct,
       document.getElementById('fSL').value||'',
       document.getElementById('fTP').value||'',
-      charges,
       document.getElementById('fSetup').value,
       document.getElementById('fNotes').value,
       document.getElementById('fMistakes').value,
@@ -865,11 +862,11 @@ async function loadTrades(){
       exitTime:fmtTime(r[3]), timeTaken:String(r[4]||''),
       sym:String(r[5]||''), mkt:String(r[6]||''), dir:String(r[7]||''),
       entry:r[8]||'', exit:r[9]||'', qty:r[10]||'',
-      pnl:String(r[11]||''), pct:String(r[12]||''), netPnl:String(r[13]||''),
-      sl:r[14]||'', tp:r[15]||'', charges:r[16]!==''&&r[16]!=null?r[16]:'',
-      setup:String(r[17]||''), notes:String(r[18]||''), mistakes:String(r[19]||''),
-      rating:String(r[20]||''), imgUrl:String(r[21]||''), driveId:String(r[22]||''),
-      rowNum:r[23]||0
+      pnl:String(r[11]||''), pct:String(r[12]||''), netPnl:String(r[11]||''),
+      sl:r[13]||'', tp:r[14]||'',
+      setup:String(r[15]||''), notes:String(r[16]||''), mistakes:String(r[17]||''),
+      rating:String(r[18]||''), imgUrl:String(r[19]||''), driveId:String(r[20]||''),
+      rowNum:r[21]||0
     }));
     renderStats();
   } catch(err){ toast('Load error: '+err.message,'err'); }
@@ -911,7 +908,7 @@ function editTrade(rowNum, ts){
   document.getElementById('fExit').value=t.exit||'';
   document.getElementById('fSL').value=t.sl||'';
   document.getElementById('fTP').value=t.tp||'';
-  document.getElementById('fCharges').value=t.charges!==''?t.charges:12;
+  document.getElementById('fCharges').value=12;
   document.getElementById('fSetup').value=t.setup||'';
   document.getElementById('fNotes').value=t.notes||'';
   document.getElementById('fMistakes').value=t.mistakes||'';
@@ -955,7 +952,7 @@ function renderHistory(){
 
   const tbody=document.getElementById('tbody');
   if(!list.length){
-    tbody.innerHTML=`<tr><td colspan="15"><div class="empty">
+    tbody.innerHTML=`<tr><td colspan="13"><div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
       <p>${trades.length===0?'No trades yet — log your first trade!':'No trades match filters.'}</p>
     </div></td></tr>`;
@@ -963,12 +960,9 @@ function renderHistory(){
   }
 
   tbody.innerHTML=list.map((t,i)=>{
-    const gross=parseFloat(t.pnl);
-    const net=parseFloat(t.netPnl);
-    const gcls=t.pnl?(gross>=0?'ppos':'pneg'):'';
-    const ncls=t.netPnl?(net>=0?'ppos':'pneg'):'';
-    const gstr=t.pnl?`${gross>=0?'+':''}${t.pnl} (${t.pct})`:`<span style="color:var(--muted)">Open</span>`;
-    const nstr=t.netPnl?`${net>=0?'+':''}${t.netPnl}`:`<span style="color:var(--muted)">—</span>`;
+    const pnlVal=parseFloat(t.pnl);
+    const pnlCls=t.pnl?(pnlVal>=0?'ppos':'pneg'):'';
+    const pnlStr=t.pnl?`${pnlVal>=0?'+':''}${t.pnl} (${t.pct})`:`<span style="color:var(--muted)">Open</span>`;
     const timeStr=t.time&&t.exitTime?`${t.time}–${t.exitTime}`:(t.time||'—');
     const stars=t.rating?'★'.repeat(+t.rating)+'☆'.repeat(5-+t.rating):'';
     const img=t.driveId
@@ -978,10 +972,8 @@ function renderHistory(){
       <td><strong>${t.sym}</strong></td><td>${t.mkt}</td>
       <td><span class="badge ${t.dir==='Long'?'b-long':'b-short'}">${t.dir}</span></td>
       <td>${t.entry}</td><td>${t.exit||'—'}</td><td>${t.qty}</td>
-      <td class="${gcls}">${gstr}</td>
-      <td class="${ncls}">${nstr}</td>
+      <td class="${pnlCls}">${pnlStr}</td>
       <td><small>${t.timeTaken||'—'}</small></td>
-      <td><small>${t.charges?'₹'+t.charges:'—'}</small></td>
       <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.setup||'—'}</td>
       <td style="color:#f59e0b;font-size:.8rem;letter-spacing:-1px">${stars}</td>
       <td>${img}</td>
@@ -1124,9 +1116,9 @@ function drawEquityCurve(closed){
 // ─── EXPORT CSV ──────────────────────────────────────────────
 function exportCSV(){
   if(!trades.length){toast('No trades to export','err');return;}
-  const cols=['Date','Symbol','Market','Direction','Entry','Exit','Qty','Gross P&L','P&L %','Net P&L','SL','TP','Charges','Duration','Strategy','Rating','Notes','Mistakes'];
+  const cols=['Date','Symbol','Market','Direction','Entry','Exit','Qty','P&L','P&L %','SL','TP','Duration','Strategy','Rating','Notes','Mistakes'];
   const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-  const rows=trades.map(t=>[t.date,t.sym,t.mkt,t.dir,t.entry,t.exit,t.qty,t.pnl,t.pct,t.netPnl,t.sl,t.tp,t.charges,t.timeTaken,t.setup,t.rating,t.notes,t.mistakes].map(esc).join(','));
+  const rows=trades.map(t=>[t.date,t.sym,t.mkt,t.dir,t.entry,t.exit,t.qty,t.pnl,t.pct,t.sl,t.tp,t.timeTaken,t.setup,t.rating,t.notes,t.mistakes].map(esc).join(','));
   const csv=[cols.map(esc).join(','),...rows].join('\n');
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
