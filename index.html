@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trade Journal</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#6366f1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TradeJournal">
+<link rel="apple-touch-icon" href="./icon.svg">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 
@@ -1211,6 +1217,10 @@ function toast(msg,type='info'){
   el.innerHTML=`<span>${type==='ok'?'✓':type==='err'?'✗':'ℹ'}</span><span>${msg}</span>`;
   c.appendChild(el);
   setTimeout(()=>{el.style.transition='.3s';el.style.opacity='0';el.style.transform='translateX(110%)';setTimeout(()=>el.remove(),300)},4000);
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
 }
 </script>
 </body>
