@@ -1160,7 +1160,8 @@ function renderHistory(){
   tbody.innerHTML=list.map((t,i)=>{
     const pnlVal=parseFloat(t.pnl);
     const pnlCls=t.pnl?(pnlVal>=0?'ppos':'pneg'):'';
-    const pnlStr=t.pnl?`${pnlVal>=0?'+':''}${t.pnl} (${t.pct})`:`<span style="color:var(--muted)">Open</span>`;
+    const pctStr=t.pct?` <small style="font-weight:600;opacity:.75">(${t.pct})</small>`:'';
+    const pnlStr=t.pnl?`${pnlVal>=0?'+':''}${t.pnl}${pctStr}`:`<span style="color:var(--muted)">Open</span>`;
     const stars=t.rating?'★'.repeat(+t.rating)+'☆'.repeat(5-+t.rating):'';
     const img=t.driveId
       ?`<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openLightbox('https://lh3.googleusercontent.com/d/${t.driveId}')">View</button>`:'—';
