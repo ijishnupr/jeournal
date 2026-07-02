@@ -1190,12 +1190,16 @@ function renderPortfolio(){
   const stockRealized=stockSold.reduce((s,r)=>s+(+r['Profit']||0),0); // lifetime realized P&L from sold stocks
   const stockValue=stockInvested+stockRealized;
 
+  const totalInvested=fdInvested+bondsInvested+stockInvested;
   const totalValue=fdMaturity+bondsMaturity+stockValue;
   const totalGain=(fdMaturity-fdInvested)+(bondsMaturity-bondsInvested)+(includeStockReturns?stockRealized:0);
+  const totalGainPct=totalInvested?(totalGain/totalInvested*100):0;
 
   document.getElementById('pfSummary').innerHTML=`
     <div class="stat-card"><div class="stat-label">Total Portfolio Value</div><div class="stat-val">${pfMoney(totalValue)}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Invested</div><div class="stat-val">${pfMoney(totalInvested)}</div></div>
     <div class="stat-card"><div class="stat-label">Expected / Realized Gain</div><div class="stat-val ${totalGain>=0?'pos':'neg'}">${totalGain>=0?'+':''}${pfMoney(totalGain)}</div>
+      <div class="stat-sub ${totalGainPct>=0?'pos':'neg'}">${totalGainPct>=0?'+':''}${totalGainPct.toFixed(1)}%</div>
       <div class="switch-row">
         <label class="switch"><input type="checkbox" ${includeStockReturns?'checked':''} onchange="toggleStockReturns()"><span class="switch-track"></span></label>
         <span class="switch-label" onclick="toggleStockReturns()">Include stock returns</span>
