@@ -270,6 +270,7 @@ tr:hover td{background:var(--row-hover)}
 .cal-cell.today{border-color:var(--primary);background:rgba(var(--primary-rgb),.06)}
 .cal-cell.today .cal-num{color:var(--primary);font-weight:800}
 .cal-cell.weekend .cal-num{opacity:.55}
+.cal-cell.weekend::before{content:'';position:absolute;top:7px;left:7px;width:6px;height:6px;border-radius:50%;background:#3b82f6}
 .cal-cell.holiday{border-color:rgba(245,158,11,.5)}
 .cal-cell.holiday::after{content:'';position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:var(--warn)}
 .cal-num{font-size:.8rem;font-weight:600;color:var(--muted)}
@@ -1386,7 +1387,7 @@ function renderCalendar(){
 
   document.getElementById('calLegend').innerHTML = `
     <span><span class="dot" style="background:var(--warn)"></span>NSE/BSE Holiday</span>
-    <span style="opacity:.6">Dimmed date = Weekend</span>
+    <span><span class="dot" style="background:#3b82f6"></span>Weekend</span>
   `;
 
   const todayStr = today();
