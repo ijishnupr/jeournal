@@ -10,6 +10,7 @@ const HEADERS = [
 ];
 
 function doGet(e) {
+  if (e && e.parameter && e.parameter.type === 'portfolio') return getPortfolio();
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const tz = ss.getSpreadsheetTimeZone();
@@ -39,6 +40,56 @@ function doGet(e) {
     });
     return out({ trades: clean });
   } catch(err) { return out({ error: err.message }); }
+}
+
+// Reads the FD / bonds / stock sheets (never Trades/backtest) for the Portfolio tab.
+// Each sheet is turned into an array of {header: value} objects using its own
+// header row, so it adapts to column changes without needing index mapping.
+function getPortfolio() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // Force any date-looking columns in these sheets to an unambiguous ISO
+    // display format first, same reasoning as the Trades Date column fix —
+    // getDisplayValues() then can't drift from what the sheet actually shows.
+    const fdSheet = ss.getSheetByName('FD');
+    if (fdSheet && fdSheet.getLastRow() > 1) {
+      fdSheet.getRange(2, 3, fdSheet.getLastRow() - 1, 1).setNumberFormat('yyyy-mm-dd'); // MATURE DATE
+    }
+    const bondsSheet = ss.getSheetByName('bonds');
+    if (bondsSheet && bondsSheet.getLastRow() > 1) {
+      bondsSheet.getRange(2, 3, bondsSheet.getLastRow() - 1, 2).setNumberFormat('yyyy-mm-dd'); // Invested Date, Mature Date
+    }
+
+    const readSheet = (name, filterCol, mustBeNumber) => {
+      const sh = ss.getSheetByName(name);
+      if (!sh || sh.getLastRow() < 2) return [];
+      const range = sh.getRange(1, 1, sh.getLastRow(), sh.getLastColumn());
+      const values = range.getValues();
+      const display = range.getDisplayValues();
+      const headers = values[0];
+      const rows = [];
+      for (let r = 1; r < values.length; r++) {
+        const key = values[r][filterCol];
+        const keep = mustBeNumber ? (typeof key === 'number' && key > 0) : (key !== '' && key !== null);
+        if (!keep) continue;
+        const obj = {};
+        headers.forEach((h, c) => {
+          if (!h) return;
+          const cell = values[r][c];
+          obj[h] = (cell instanceof Date) ? display[r][c] : cell;
+        });
+        rows.push(obj);
+      }
+      return rows;
+    };
+
+    return out({
+      fd: readSheet('FD', 1, true),       // filter on AMOUNT so the "ONLY REINVESTING ALLOWED..." note row is skipped
+      bonds: readSheet('bonds', 0, false), // filter on Name
+      stock: readSheet('stock', 0, false), // filter on Stock
+    });
+  } catch (err) { return out({ error: err.message }); }
 }
 
 function doPost(e) {

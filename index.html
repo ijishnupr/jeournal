@@ -280,6 +280,10 @@ tr:hover td{background:var(--row-hover)}
 .cal-legend span{display:inline-flex;align-items:center;gap:5px}
 .cal-legend .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
 
+/* ── PORTFOLIO ── */
+.pf-bar{display:flex;width:100%;height:16px;border-radius:8px;overflow:hidden;background:var(--card2);gap:2px}
+.pf-bar div{transition:width .4s cubic-bezier(.22,1,.36,1)}
+
 .hidden{display:none!important}
 @media(max-width:768px){
   .content{padding:14px}
@@ -349,6 +353,7 @@ tr:hover td{background:var(--row-hover)}
 const HEADERS = ['Timestamp','Date','Entry Time','Exit Time','Time Taken','Symbol','Market','Direction','Entry Price','Exit Price','Quantity','P&L','P&L %','Stop Loss','Take Profit','Strategy','Notes','Mistakes','Rating','Image URL','Drive File ID'];
 
 function doGet(e) {
+  if (e && e.parameter && e.parameter.type === 'portfolio') return getPortfolio();
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const tz = ss.getSpreadsheetTimeZone();
@@ -377,6 +382,43 @@ function doGet(e) {
     });
     return out({ trades: clean });
   } catch(e) { return out({ error: e.message }); }
+}
+
+function getPortfolio() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const fdSheet = ss.getSheetByName('FD');
+    if (fdSheet && fdSheet.getLastRow() > 1) fdSheet.getRange(2, 3, fdSheet.getLastRow() - 1, 1).setNumberFormat('yyyy-mm-dd');
+    const bondsSheet = ss.getSheetByName('bonds');
+    if (bondsSheet && bondsSheet.getLastRow() > 1) bondsSheet.getRange(2, 3, bondsSheet.getLastRow() - 1, 2).setNumberFormat('yyyy-mm-dd');
+    const readSheet = (name, filterCol, mustBeNumber) => {
+      const sh = ss.getSheetByName(name);
+      if (!sh || sh.getLastRow() < 2) return [];
+      const range = sh.getRange(1, 1, sh.getLastRow(), sh.getLastColumn());
+      const values = range.getValues();
+      const display = range.getDisplayValues();
+      const headers = values[0];
+      const rows = [];
+      for (let r = 1; r < values.length; r++) {
+        const key = values[r][filterCol];
+        const keep = mustBeNumber ? (typeof key === 'number' && key > 0) : (key !== '' && key !== null);
+        if (!keep) continue;
+        const obj = {};
+        headers.forEach((h, c) => {
+          if (!h) return;
+          const cell = values[r][c];
+          obj[h] = (cell instanceof Date) ? display[r][c] : cell;
+        });
+        rows.push(obj);
+      }
+      return rows;
+    };
+    return out({
+      fd: readSheet('FD', 1, true),
+      bonds: readSheet('bonds', 0, false),
+      stock: readSheet('stock', 0, false),
+    });
+  } catch (e) { return out({ error: e.message }); }
 }
 
 function doPost(e) {
@@ -457,6 +499,7 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
     <div class="tab" onclick="goTab('history')">History</div>
     <div class="tab" onclick="goTab('stats')">Stats</div>
     <div class="tab" onclick="goTab('calendar')">Calendar</div>
+    <div class="tab" onclick="goTab('portfolio')">Portfolio</div>
   </div>
 
   <div class="content">
@@ -690,6 +733,34 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
       </div>
     </div>
 
+    <!-- PORTFOLIO -->
+    <div id="tab-portfolio" class="tab-content">
+      <div class="stats-grid" id="pfSummary"></div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header"><h2>Allocation</h2>
+          <button class="btn btn-outline btn-sm" onclick="loadPortfolio()">↻ Refresh</button>
+        </div>
+        <div class="card-body" id="pfAllocation"></div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><h2>Fixed Deposits</h2></div>
+          <div class="card-body" id="pfFD" style="padding:0 0 8px"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>Bonds</h2></div>
+          <div class="card-body" id="pfBonds" style="padding:0 0 8px"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Stocks</h2></div>
+        <div class="card-body" id="pfStock" style="padding:0 0 8px"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -797,7 +868,7 @@ function copyScript(){
 }
 
 // ─── TABS ────────────────────────────────────────────────────
-const TAB_ORDER=['new','history','stats','calendar'];
+const TAB_ORDER=['new','history','stats','calendar','portfolio'];
 let currentTab='new';
 function goTab(name, dir){
   currentTab=name;
@@ -813,6 +884,7 @@ function goTab(name, dir){
   if (name==='history') renderHistory();
   if (name==='stats') renderStats();
   if (name==='calendar') renderCalendar();
+  if (name==='portfolio') loadPortfolio();
 }
 
 // ─── MOBILE SWIPE ────────────────────────────────────────────
@@ -1049,6 +1121,100 @@ async function loadTrades(){
     }));
     renderStats();
   } catch(err){ toast('Load error: '+err.message,'err'); }
+}
+
+// ─── PORTFOLIO (FD / Bonds / Stock — not Trades) ──────────────
+let portfolio = {fd:[], bonds:[], stock:[]};
+async function loadPortfolio(){
+  if(!GAS_URL) return;
+  try {
+    const sep = GAS_URL.includes('?') ? '&' : '?';
+    const r = await fetch(GAS_URL + sep + 'type=portfolio');
+    const data = await r.json();
+    if(data.error) throw new Error(data.error);
+    portfolio = { fd:data.fd||[], bonds:data.bonds||[], stock:data.stock||[] };
+    renderPortfolio();
+  } catch(err){ toast('Portfolio load error: '+err.message,'err'); }
+}
+
+function daysUntil(dateStr){
+  if(!dateStr) return null;
+  const [y,m,d] = String(dateStr).split(/[-\/]/).map(Number);
+  if(!y||!m||!d) return null;
+  const target = new Date(y, m-1, d);
+  const now = new Date(); now.setHours(0,0,0,0);
+  return Math.round((target-now)/86400000);
+}
+
+function pfMoney(v){ return '₹'+(+v||0).toLocaleString('en-IN',{maximumFractionDigits:0}); }
+
+function renderPortfolio(){
+  const fd=portfolio.fd, bonds=portfolio.bonds, stock=portfolio.stock;
+
+  const fdInvested=fd.reduce((s,r)=>s+(+r['AMOUNT']||0),0);
+  const fdMaturity=fd.reduce((s,r)=>s+(+r['MATURE AMOUNT']||0),0);
+  const bondsInvested=bonds.reduce((s,r)=>s+(+r['Amount invested']||0),0);
+  const bondsMaturity=bonds.reduce((s,r)=>s+(+r['Mature amount']||0),0);
+  const stockProfit=stock.reduce((s,r)=>s+(+r['Profit']||0),0);
+  const stockInvested=stock.reduce((s,r)=>s+(+r['Invested amount']||0),0);
+  const stockBalance=stock.length?(+stock[stock.length-1]['Balance']||0):0;
+
+  const totalValue=fdMaturity+bondsMaturity+stockBalance;
+  const totalGain=(fdMaturity-fdInvested)+(bondsMaturity-bondsInvested)+stockProfit;
+
+  document.getElementById('pfSummary').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Total Portfolio Value</div><div class="stat-val">${pfMoney(totalValue)}</div></div>
+    <div class="stat-card"><div class="stat-label">Expected / Realized Gain</div><div class="stat-val ${totalGain>=0?'pos':'neg'}">${totalGain>=0?'+':''}${pfMoney(totalGain)}</div></div>
+    <div class="stat-card"><div class="stat-label">Fixed Deposits</div><div class="stat-val">${pfMoney(fdMaturity)}</div><div class="stat-sub">${fd.length} active · ${pfMoney(fdInvested)} invested</div></div>
+    <div class="stat-card"><div class="stat-label">Bonds</div><div class="stat-val">${pfMoney(bondsMaturity)}</div><div class="stat-sub">${bonds.length} active · ${pfMoney(bondsInvested)} invested</div></div>
+    <div class="stat-card"><div class="stat-label">Stock Strategy Balance</div><div class="stat-val">${pfMoney(stockBalance)}</div><div class="stat-sub">${stockProfit>=0?'+':''}${pfMoney(stockProfit)} lifetime P&amp;L</div></div>
+  `;
+
+  // Allocation bar — categorical, fixed hue order, always direct-labeled (never color-alone)
+  const cats=[
+    {label:'Fixed Deposits', val:fdMaturity, color:'#6366f1'},
+    {label:'Bonds', val:bondsMaturity, color:'#14b8a6'},
+    {label:'Stock Strategy', val:stockBalance, color:'#a855f7'},
+  ].filter(c=>c.val>0);
+  const total=cats.reduce((s,c)=>s+c.val,0);
+  if(!total){
+    document.getElementById('pfAllocation').innerHTML='<p style="color:var(--muted);text-align:center;padding:20px">No portfolio data yet.</p>';
+  } else {
+    const segs=cats.map(c=>`<div style="width:${(c.val/total*100).toFixed(1)}%;background:${c.color}" title="${c.label}: ${pfMoney(c.val)}"></div>`).join('');
+    const legend=cats.map(c=>`<span><span class="dot" style="background:${c.color}"></span>${c.label} — ${pfMoney(c.val)} (${(c.val/total*100).toFixed(0)}%)</span>`).join('');
+    document.getElementById('pfAllocation').innerHTML=`
+      <div class="pf-bar">${segs}</div>
+      <div class="cal-legend" style="margin:12px 0 0">${legend}</div>
+    `;
+  }
+
+  // ── Fixed Deposits table ──
+  const fdSorted=[...fd].sort((a,b)=>new Date(a['MATURE DATE'])-new Date(b['MATURE DATE']));
+  document.getElementById('pfFD').innerHTML=fdSorted.length
+    ?`<div class="tbl-wrap"><table><thead><tr><th>Bank</th><th>Amount</th><th>Maturity</th><th>Days Left</th><th>Rate</th><th>Maturity Amt</th></tr></thead><tbody>
+      ${fdSorted.map(r=>{const days=daysUntil(r['MATURE DATE']);const soon=days!==null&&days<=30;
+        return `<tr${soon?' style="background:rgba(245,158,11,.08)"':''}><td><strong>${escHtml(r['INVESTMENTS'])}</strong></td><td>${pfMoney(r['AMOUNT'])}</td>
+        <td>${escHtml(r['MATURE DATE'])}</td><td>${days!==null?days+'d':'—'}</td><td>${r['PERCENTAGE']||'—'}%</td><td>${pfMoney(r['MATURE AMOUNT'])}</td></tr>`;}).join('')}
+      </tbody></table></div>`
+    :'<p style="color:var(--muted);text-align:center;padding:20px">No FDs found.</p>';
+
+  // ── Bonds table ──
+  const bondsSorted=[...bonds].sort((a,b)=>new Date(a['Mature Date'])-new Date(b['Mature Date']));
+  document.getElementById('pfBonds').innerHTML=bondsSorted.length
+    ?`<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Platform</th><th>Amount</th><th>Maturity</th><th>Months Left</th><th>Return %</th></tr></thead><tbody>
+      ${bondsSorted.map(r=>`<tr><td><strong>${escHtml(r['Name'])}</strong></td><td>${escHtml(r['App'])}</td><td>${pfMoney(r['Amount invested'])}</td>
+        <td>${escHtml(r['Mature Date'])}</td><td>${r['Months left']??'—'}</td><td>${r['Percentage of return']||'—'}%</td></tr>`).join('')}
+      </tbody></table></div>`
+    :'<p style="color:var(--muted);text-align:center;padding:20px">No bonds found.</p>';
+
+  // ── Stock table ──
+  document.getElementById('pfStock').innerHTML=stock.length
+    ?`<div class="tbl-wrap"><table><thead><tr><th>Stock</th><th>Entry</th><th>Exit</th><th>Qty</th><th>Invested</th><th>Profit</th><th>%</th><th>Strategy</th></tr></thead><tbody>
+      ${stock.map(r=>{const profit=+r['Profit']||0;
+        return `<tr><td><strong>${escHtml(r['Stock'])}</strong></td><td>${r['Entry']??'—'}</td><td>${r['Exit']??'—'}</td><td>${r['Quantity']??'—'}</td>
+        <td>${pfMoney(r['Invested amount'])}</td><td class="${profit>=0?'ppos':'pneg'}">${profit>=0?'+':''}${profit.toFixed(2)}</td><td>${r['Percentage']??'—'}%</td><td>${escHtml(r['stratigy used']||'—')}</td></tr>`;}).join('')}
+      </tbody></table></div>`
+    :'<p style="color:var(--muted);text-align:center;padding:20px">No stock entries found.</p>';
 }
 
 function toBase64(file){

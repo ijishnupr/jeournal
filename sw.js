@@ -1,4 +1,4 @@
-const CACHE = 'tj-v10';
+const CACHE = 'tj-v11';
 const SHELL = ['./index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
