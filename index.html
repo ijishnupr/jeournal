@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trade Journal</title>
 <link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#6366f1">
+<meta name="theme-color" id="themeColorMeta" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TradeJournal">
@@ -57,6 +57,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .nav-brand{font-size:1.1rem;font-weight:800;display:flex;align-items:center;gap:9px;
   background:linear-gradient(135deg,var(--primary),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .nav-brand svg{stroke:url(#brandGrad);flex-shrink:0;-webkit-text-fill-color:initial}
+.nav-brand svg polyline{stroke-dasharray:10 36;stroke-dashoffset:0;animation:brandPulse 2.2s linear infinite}
+@keyframes brandPulse{to{stroke-dashoffset:-46}}
+@media(prefers-reduced-motion:reduce){.nav-brand svg polyline{animation:none}}
 .nav-right{display:flex;align-items:center;gap:8px}
 
 /* ── BUTTONS ── */
@@ -189,6 +192,20 @@ tr:hover td{background:var(--row-hover)}
 .lightbox img{max-width:90vw;max-height:90vh;border-radius:10px;box-shadow:0 0 60px rgba(0,0,0,.6)}
 .lb-close{position:fixed;top:18px;right:22px;background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:1.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 
+/* ── TRADE DETAIL ── */
+.detail-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1900;align-items:center;justify-content:center;padding:20px}
+.detail-modal.on{display:flex}
+.detail-card{background:var(--card);border-radius:16px;padding:22px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg);border:1px solid var(--border)}
+.detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px}
+.detail-header h3{font-size:1.05rem;font-weight:800}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-bottom:14px}
+.detail-item label{display:block;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.detail-item div{font-size:.9rem;font-weight:600}
+.detail-note{margin-bottom:12px}
+.detail-note label{display:block;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.detail-note p{font-size:.85rem;white-space:pre-wrap;line-height:1.5}
+.detail-actions{display:flex;gap:8px;margin-top:16px}
+
 /* ── LOADING ── */
 .loading-bg{display:none;position:fixed;inset:0;background:var(--overlay);backdrop-filter:blur(4px);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:14px}
 .loading-bg.on{display:flex}
@@ -223,7 +240,7 @@ tr:hover td{background:var(--row-hover)}
 .cal-cell.empty{background:transparent;border-color:transparent;pointer-events:none}
 .cal-cell.profit{background:rgba(16,185,129,.13);border-color:rgba(16,185,129,.35)}
 .cal-cell.loss{background:rgba(239,68,68,.11);border-color:rgba(239,68,68,.3)}
-.cal-cell.has-t{cursor:default}
+.cal-cell.has-t{cursor:pointer}
 .cal-cell.has-t:hover{box-shadow:var(--shadow-md)}
 .cal-cell.today{border-color:var(--primary);background:rgba(var(--primary-rgb),.06)}
 .cal-cell.today .cal-num{color:var(--primary);font-weight:800}
@@ -338,6 +355,7 @@ function doPost(e) {
       if (!sheet) return out({ error: 'Sheet not found' });
       // Prefer row-number lookup (fast, unambiguous)
       if (d.rowNum && d.rowNum > 1 && d.rowNum <= sheet.getLastRow()) {
+        sheet.getRange(d.rowNum, 2).setNumberFormat('@'); // keep Date column as plain text — avoids timezone conversion bugs
         sheet.getRange(d.rowNum, 1, 1, d.row.length).setValues([d.row]);
         return out({ success: true });
       }
@@ -348,6 +366,7 @@ function doPost(e) {
         const cellStr = cell instanceof Date ? cell.toISOString() : String(cell);
         const sent = String(d.timestamp);
         if (cellStr === sent || cellStr.split('T')[0] === sent || sent.split('T')[0] === cellStr) {
+          sheet.getRange(i+1, 2).setNumberFormat('@');
           sheet.getRange(i+1, 1, 1, d.row.length).setValues([d.row]);
           return out({ success: true });
         }
@@ -359,7 +378,9 @@ function doPost(e) {
       let sheet = ss.getSheetByName(SHEET_NAME);
       if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
       if (sheet.getLastRow() === 0) sheet.appendRow(HEADERS);
-      sheet.appendRow(d.row);
+      const rowNum = sheet.getLastRow() + 1;
+      sheet.getRange(rowNum, 2).setNumberFormat('@'); // keep Date column as plain text — avoids timezone conversion bugs
+      sheet.getRange(rowNum, 1, 1, d.row.length).setValues([d.row]);
       return out({ success: true });
     }
     return out({ error: 'Unknown request type' });
@@ -549,13 +570,15 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
               <option value="pnl-desc">P&amp;L: High to Low</option>
               <option value="pnl-asc">P&amp;L: Low to High</option>
               <option value="sym-asc">Symbol A-Z</option>
+              <option value="dur-desc">Duration: Longest First</option>
+              <option value="dur-asc">Duration: Shortest First</option>
             </select>
           </div>
         </div>
         <div class="tbl-wrap">
           <table>
             <thead><tr>
-              <th>Date</th><th>Symbol</th><th>Market</th><th>Dir</th>
+              <th>Date</th><th>Symbol</th><th>Dir</th>
               <th>Entry</th><th>Exit</th><th>Qty</th>
               <th>P&amp;L</th>
               <th>Duration</th>
@@ -635,6 +658,21 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lb-close">×</button>
   <img id="lbImg" src="" alt="chart">
+</div>
+
+<!-- TRADE DETAIL -->
+<div class="detail-modal" id="detailModal" onclick="if(event.target===this)closeTradeDetail()">
+  <div class="detail-card">
+    <div class="detail-header">
+      <h3 id="detailTitle">Trade Detail</h3>
+      <button class="btn btn-ghost btn-icon" onclick="closeTradeDetail()">✕</button>
+    </div>
+    <div id="detailBody"></div>
+    <div class="detail-actions">
+      <button class="btn btn-primary btn-sm" id="detailEditBtn">✏ Edit Trade</button>
+      <button class="btn btn-outline btn-sm" onclick="closeTradeDetail()">Close</button>
+    </div>
+  </div>
 </div>
 
 <!-- LOADING -->
@@ -720,14 +758,33 @@ function copyScript(){
 }
 
 // ─── TABS ────────────────────────────────────────────────────
+const TAB_ORDER=['new','history','stats','calendar'];
+let currentTab='new';
 function goTab(name){
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['new','history','stats','calendar'][i]===name));
+  currentTab=name;
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',TAB_ORDER[i]===name));
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   if (name==='history') renderHistory();
   if (name==='stats') renderStats();
   if (name==='calendar') renderCalendar();
 }
+
+// ─── MOBILE SWIPE ────────────────────────────────────────────
+(function(){
+  let sx=0, sy=0;
+  const content=document.querySelector('.content');
+  content.addEventListener('touchstart', e=>{
+    sx=e.touches[0].clientX; sy=e.touches[0].clientY;
+  }, {passive:true});
+  content.addEventListener('touchend', e=>{
+    const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)<60 || Math.abs(dx)<Math.abs(dy)*1.5) return;
+    const idx=TAB_ORDER.indexOf(currentTab);
+    if(dx<0 && idx<TAB_ORDER.length-1) goTab(TAB_ORDER[idx+1]);
+    else if(dx>0 && idx>0) goTab(TAB_ORDER[idx-1]);
+  }, {passive:true});
+})();
 
 // ─── IMAGE ───────────────────────────────────────────────────
 function onFileSelect(e){ if(e.target.files[0]) setImage(e.target.files[0]) }
@@ -846,7 +903,9 @@ async function submitTrade(e){
     if(res.error) throw new Error(res.error);
     toast(editingTs?'Trade updated!':'Trade saved!','ok');
     cancelEdit(); // resets form + clears edit state
-    trades=[];
+    await loadTrades();
+    renderHistory();
+    renderCalendar();
   } catch(err){
     toast('Error: '+(err.message||'Unknown'),'err');
     console.error(err);
@@ -879,6 +938,14 @@ function fmtTime(v){
     if(!isNaN(d)) return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
   }
   return '';
+}
+function durationMinutes(v){
+  if(!v) return -1;
+  const s=String(v);
+  const h=s.match(/(\d+)\s*h/);
+  const m=s.match(/(\d+)\s*m/);
+  if(!h && !m) return -1;
+  return (h?(+h[1])*60:0) + (m?+m[1]:0);
 }
 
 async function loadTrades(){
@@ -982,6 +1049,8 @@ function renderHistory(){
     'pnl-desc':(a,b)=>(parseFloat(b.pnl)||0)-(parseFloat(a.pnl)||0),
     'pnl-asc':(a,b)=>(parseFloat(a.pnl)||0)-(parseFloat(b.pnl)||0),
     'sym-asc':(a,b)=>a.sym.localeCompare(b.sym)||b.date.localeCompare(a.date),
+    'dur-desc':(a,b)=>durationMinutes(b.timeTaken)-durationMinutes(a.timeTaken),
+    'dur-asc':(a,b)=>durationMinutes(a.timeTaken)-durationMinutes(b.timeTaken),
   };
 
   let list=trades.filter(t=>
@@ -991,7 +1060,7 @@ function renderHistory(){
 
   const tbody=document.getElementById('tbody');
   if(!list.length){
-    tbody.innerHTML=`<tr><td colspan="13"><div class="empty">
+    tbody.innerHTML=`<tr><td colspan="12"><div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
       <p>${trades.length===0?'No trades yet — log your first trade!':'No trades match filters.'}</p>
     </div></td></tr>`;
@@ -1002,13 +1071,12 @@ function renderHistory(){
     const pnlVal=parseFloat(t.pnl);
     const pnlCls=t.pnl?(pnlVal>=0?'ppos':'pneg'):'';
     const pnlStr=t.pnl?`${pnlVal>=0?'+':''}${t.pnl} (${t.pct})`:`<span style="color:var(--muted)">Open</span>`;
-    const timeStr=t.time&&t.exitTime?`${t.time}–${t.exitTime}`:(t.time||'—');
     const stars=t.rating?'★'.repeat(+t.rating)+'☆'.repeat(5-+t.rating):'';
     const img=t.driveId
-      ?`<button class="btn btn-outline btn-sm" onclick="openLightbox('https://lh3.googleusercontent.com/d/${t.driveId}')">View</button>`:'—';
-    return `<tr style="animation:rowIn .2s ease both;animation-delay:${Math.min(i*.04,.4)}s">
-      <td>${t.date}<br><small style="color:var(--muted)">${timeStr}</small></td>
-      <td><strong>${t.sym}</strong></td><td>${t.mkt}</td>
+      ?`<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openLightbox('https://lh3.googleusercontent.com/d/${t.driveId}')">View</button>`:'—';
+    return `<tr style="animation:rowIn .2s ease both;animation-delay:${Math.min(i*.04,.4)}s;cursor:pointer" onclick="if(!event.target.closest('button'))openTradeDetail('${t.ts}')">
+      <td>${t.date}</td>
+      <td><strong>${t.sym}</strong></td>
       <td><span class="badge ${t.dir==='Long'?'b-long':'b-short'}">${t.dir}</span></td>
       <td>${t.entry}</td><td>${t.exit||'—'}</td><td>${t.qty}</td>
       <td class="${pnlCls}">${pnlStr}</td>
@@ -1016,7 +1084,7 @@ function renderHistory(){
       <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.setup||'—'}</td>
       <td style="color:#f59e0b;font-size:.8rem;letter-spacing:-1px">${stars}</td>
       <td>${img}</td>
-      <td><button class="btn btn-outline btn-sm" onclick="editTrade(${t.rowNum||0},'${t.ts}')">✏ Edit</button></td>
+      <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();editTrade(${t.rowNum||0},'${t.ts}')">✏ Edit</button></td>
     </tr>`;
   }).join('');
 }
@@ -1213,7 +1281,9 @@ function renderCalendar(){
     const data = dayMap[d];
     const isToday = calYear===ty && calMonth+1===tm && d===td;
     const pnlCls = data ? (data.pnl>=0?' profit':' loss') : '';
-    html += `<div class="cal-cell${pnlCls}${isToday?' today':''}${data?' has-t':''}">
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const onclick = data ? ` onclick="viewDayInHistory('${dateStr}')"` : '';
+    html += `<div class="cal-cell${pnlCls}${isToday?' today':''}${data?' has-t':''}"${onclick}>
       <div class="cal-num">${d}</div>
       ${data?`<div class="cal-pnl ${data.pnl>=0?'pos':'neg'}">${data.pnl>=0?'+':''}${data.pnl.toFixed(0)}</div>
       <div class="cal-cnt">${data.count} trade${data.count>1?'s':''}</div>`:''}
@@ -1225,6 +1295,48 @@ function renderCalendar(){
 // ─── LIGHTBOX ────────────────────────────────────────────────
 function openLightbox(src){ document.getElementById('lbImg').src=src; document.getElementById('lightbox').classList.add('on') }
 function closeLightbox(){ document.getElementById('lightbox').classList.remove('on'); document.getElementById('lbImg').src='' }
+
+// ─── TRADE DETAIL ────────────────────────────────────────────
+function escHtml(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function openTradeDetail(ts){
+  const t=trades.find(x=>x.ts===ts);
+  if(!t) return;
+  const pnlVal=parseFloat(t.pnl);
+  const pnlCls=t.pnl?(pnlVal>=0?'ppos':'pneg'):'';
+  const pnlStr=t.pnl?`${pnlVal>=0?'+':''}${t.pnl} (${t.pct})`:'Open';
+  const stars=t.rating?'★'.repeat(+t.rating)+'☆'.repeat(5-+t.rating):'—';
+  const timeStr=t.time&&t.exitTime?`${t.time} – ${t.exitTime}`:(t.time||'—');
+  document.getElementById('detailTitle').textContent=`${t.sym} — ${t.date}`;
+  document.getElementById('detailBody').innerHTML=`
+    <div class="detail-grid">
+      <div class="detail-item"><label>Symbol</label><div>${escHtml(t.sym)}</div></div>
+      <div class="detail-item"><label>Market</label><div>${escHtml(t.mkt)||'—'}</div></div>
+      <div class="detail-item"><label>Direction</label><div><span class="badge ${t.dir==='Long'?'b-long':'b-short'}">${t.dir}</span></div></div>
+      <div class="detail-item"><label>P&amp;L</label><div class="${pnlCls}">${pnlStr}</div></div>
+      <div class="detail-item"><label>Entry Price</label><div>${t.entry}</div></div>
+      <div class="detail-item"><label>Exit Price</label><div>${t.exit||'—'}</div></div>
+      <div class="detail-item"><label>Quantity</label><div>${t.qty}</div></div>
+      <div class="detail-item"><label>Duration</label><div>${t.timeTaken||'—'}</div></div>
+      <div class="detail-item"><label>Stop Loss</label><div>${t.sl||'—'}</div></div>
+      <div class="detail-item"><label>Take Profit</label><div>${t.tp||'—'}</div></div>
+      <div class="detail-item"><label>Time</label><div>${timeStr}</div></div>
+      <div class="detail-item"><label>Rating</label><div style="color:#f59e0b">${stars}</div></div>
+      <div class="detail-item" style="grid-column:1/-1"><label>Strategy</label><div>${escHtml(t.setup)||'—'}</div></div>
+    </div>
+    ${t.notes?`<div class="detail-note"><label>Notes</label><p>${escHtml(t.notes)}</p></div>`:''}
+    ${t.mistakes?`<div class="detail-note"><label>Mistakes</label><p>${escHtml(t.mistakes)}</p></div>`:''}
+    ${t.driveId?`<div class="detail-note"><label>Chart</label><button class="btn btn-outline btn-sm" onclick="openLightbox('https://lh3.googleusercontent.com/d/${t.driveId}')">View Chart</button></div>`:''}
+  `;
+  document.getElementById('detailEditBtn').onclick=()=>{ closeTradeDetail(); editTrade(t.rowNum||0, t.ts); };
+  document.getElementById('detailModal').classList.add('on');
+}
+function closeTradeDetail(){ document.getElementById('detailModal').classList.remove('on'); }
+
+function viewDayInHistory(dateStr){
+  document.getElementById('fltFrom').value=dateStr;
+  document.getElementById('fltTo').value=dateStr;
+  goTab('history');
+}
 
 // ─── FORM ────────────────────────────────────────────────────
 function resetForm(){

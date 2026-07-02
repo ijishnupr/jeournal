@@ -52,6 +52,7 @@ function doPost(e) {
       if (!sheet) return out({ error: 'Sheet not found' });
       // Fast path: update by row number
       if (data.rowNum && data.rowNum > 1 && data.rowNum <= sheet.getLastRow()) {
+        sheet.getRange(data.rowNum, 2).setNumberFormat('@'); // keep Date column as plain text — avoids Sheets/Apps Script timezone conversion bugs
         sheet.getRange(data.rowNum, 1, 1, data.row.length).setValues([data.row]);
         return out({ success: true });
       }
@@ -62,6 +63,7 @@ function doPost(e) {
         const cellStr = cell instanceof Date ? cell.toISOString() : String(cell);
         const sent = String(data.timestamp);
         if (cellStr === sent || cellStr.split('T')[0] === sent || sent.split('T')[0] === cellStr) {
+          sheet.getRange(i + 1, 2).setNumberFormat('@');
           sheet.getRange(i + 1, 1, 1, data.row.length).setValues([data.row]);
           return out({ success: true });
         }
@@ -74,7 +76,9 @@ function doPost(e) {
       let sheet = ss.getSheetByName(SHEET_NAME);
       if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
       if (sheet.getLastRow() === 0) sheet.appendRow(HEADERS);
-      sheet.appendRow(data.row);
+      const rowNum = sheet.getLastRow() + 1;
+      sheet.getRange(rowNum, 2).setNumberFormat('@'); // keep Date column as plain text — avoids Sheets/Apps Script timezone conversion bugs
+      sheet.getRange(rowNum, 1, 1, data.row.length).setValues([data.row]);
       return out({ success: true });
     }
 

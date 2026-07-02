@@ -4,8 +4,8 @@
   "description": "Personal trade journal — track entries, exits, P&L and stats",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#080c18",
-  "theme_color": "#6366f1",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "orientation": "portrait-primary",
   "icons": [
     {
