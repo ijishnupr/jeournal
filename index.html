@@ -33,16 +33,16 @@
 [data-dark]{
   --primary:#818cf8;--primary-d:#6366f1;--primary-rgb:129,140,248;
   --success:#34d399;--danger:#f87171;--warn:#fbbf24;
-  --bg:#080c18;--card:#0f1629;--card2:#131d35;
-  --border:#1e2d45;--border2:#253552;
+  --bg:#000000;--card:#000000;--card2:#0a0a0a;
+  --border:#1a1a1a;--border2:#262626;
   --text:#e2e8f0;--sec:#94a3b8;--muted:#4b5a72;
-  --shadow:0 1px 4px rgba(0,0,0,.4);
-  --shadow-md:0 4px 16px rgba(0,0,0,.4);
-  --shadow-lg:0 12px 32px rgba(0,0,0,.5);
-  --input-bg:#0f1629;--row-hover:#141e35;
+  --shadow:0 1px 4px rgba(0,0,0,.6);
+  --shadow-md:0 4px 16px rgba(0,0,0,.6);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.7);
+  --input-bg:#000000;--row-hover:#0d0d0d;
   --badge-long-bg:#064e3b;--badge-long-fg:#6ee7b7;
   --badge-short-bg:#450a0a;--badge-short-fg:#fca5a5;
-  --overlay:rgba(8,12,24,.88)
+  --overlay:rgba(0,0,0,.9)
 }
 
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;transition:background .25s,color .25s}
@@ -291,7 +291,9 @@ const HEADERS = ['Timestamp','Date','Entry Time','Exit Time','Time Taken','Symbo
 
 function doGet(e) {
   try {
-    const s = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const tz = ss.getSpreadsheetTimeZone();
+    const s = ss.getSheetByName(SHEET_NAME);
     if (!s || s.getLastRow() <= 1) return out({ trades: [] });
     const rows = s.getDataRange().getValues();
     rows.shift();
@@ -300,9 +302,9 @@ function doGet(e) {
         if (cell instanceof Date) {
           if (colIdx === 0) return cell.toISOString(); // Timestamp — keep full ISO string
           if (cell.getFullYear() <= 1900) {
-            return String(cell.getHours()).padStart(2,'0') + ':' + String(cell.getMinutes()).padStart(2,'0');
+            return Utilities.formatDate(cell, tz, 'HH:mm');
           }
-          return cell.getFullYear() + '-' + String(cell.getMonth()+1).padStart(2,'0') + '-' + String(cell.getDate()).padStart(2,'0');
+          return Utilities.formatDate(cell, tz, 'yyyy-MM-dd');
         }
         return cell;
       });
@@ -520,6 +522,13 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
             </select>
             <input type="date" id="fltFrom" onchange="renderHistory()">
             <input type="date" id="fltTo" onchange="renderHistory()">
+            <select id="fltSort" onchange="renderHistory()">
+              <option value="date-desc">Newest First</option>
+              <option value="date-asc">Oldest First</option>
+              <option value="pnl-desc">P&amp;L: High to Low</option>
+              <option value="pnl-asc">P&amp;L: Low to High</option>
+              <option value="sym-asc">Symbol A-Z</option>
+            </select>
           </div>
         </div>
         <div class="tbl-wrap">
@@ -944,11 +953,20 @@ function renderHistory(){
   const mkt=document.getElementById('fltMkt').value;
   const from=document.getElementById('fltFrom').value;
   const to=document.getElementById('fltTo').value;
+  const sort=document.getElementById('fltSort').value;
+
+  const sorters={
+    'date-desc':(a,b)=>b.date.localeCompare(a.date)||b.ts.localeCompare(a.ts),
+    'date-asc':(a,b)=>a.date.localeCompare(b.date)||a.ts.localeCompare(b.ts),
+    'pnl-desc':(a,b)=>(parseFloat(b.pnl)||0)-(parseFloat(a.pnl)||0),
+    'pnl-asc':(a,b)=>(parseFloat(a.pnl)||0)-(parseFloat(b.pnl)||0),
+    'sym-asc':(a,b)=>a.sym.localeCompare(b.sym)||b.date.localeCompare(a.date),
+  };
 
   let list=trades.filter(t=>
     (!sym||t.sym.includes(sym))&&(!dir||t.dir===dir)&&
     (!mkt||t.mkt===mkt)&&(!from||t.date>=from)&&(!to||t.date<=to)
-  ).sort((a,b)=>b.date.localeCompare(a.date)||b.ts.localeCompare(a.ts));
+  ).sort(sorters[sort]||sorters['date-desc']);
 
   const tbody=document.getElementById('tbody');
   if(!list.length){

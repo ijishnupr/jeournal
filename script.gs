@@ -11,7 +11,9 @@ const HEADERS = [
 
 function doGet(e) {
   try {
-    const s = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const tz = ss.getSpreadsheetTimeZone(); // sheet's own timezone, not the script project's
+    const s = ss.getSheetByName(SHEET_NAME);
     if (!s || s.getLastRow() <= 1) return out({ trades: [] });
     const rows = s.getDataRange().getValues();
     rows.shift(); // remove header row
@@ -21,10 +23,10 @@ function doGet(e) {
           if (colIdx === 0) return cell.toISOString(); // Timestamp
           if (cell.getFullYear() <= 1900) {
             // Time value stored by Sheets — format as HH:MM
-            return String(cell.getHours()).padStart(2,'0') + ':' + String(cell.getMinutes()).padStart(2,'0');
+            return Utilities.formatDate(cell, tz, 'HH:mm');
           }
           // Date value — format as YYYY-MM-DD
-          return cell.getFullYear() + '-' + String(cell.getMonth()+1).padStart(2,'0') + '-' + String(cell.getDate()).padStart(2,'0');
+          return Utilities.formatDate(cell, tz, 'yyyy-MM-dd');
         }
         return cell;
       });
