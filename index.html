@@ -199,9 +199,11 @@ tr:hover td{background:var(--row-hover)}
 .lb-close{position:fixed;top:18px;right:22px;background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:1.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 
 /* ── TRADE DETAIL ── */
-.detail-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1900;align-items:center;justify-content:center;padding:20px}
-.detail-modal.on{display:flex}
-.detail-card{background:var(--card);border-radius:16px;padding:22px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg);border:1px solid var(--border)}
+.detail-modal{display:flex;position:fixed;inset:0;background:rgba(0,0,0,0);z-index:1900;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;backdrop-filter:blur(0px);transition:opacity .28s cubic-bezier(.22,1,.36,1),background .28s ease,backdrop-filter .28s ease}
+.detail-modal.on{opacity:1;pointer-events:all;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+.detail-card{background:var(--card);border-radius:16px;padding:22px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg);border:1px solid var(--border);transform:scale(.9) translateY(18px);opacity:0;transition:transform .38s cubic-bezier(.34,1.56,.64,1),opacity .25s ease}
+.detail-modal.on .detail-card{transform:scale(1) translateY(0);opacity:1}
+@media(prefers-reduced-motion:reduce){.detail-modal,.detail-card{transition:none}}
 .detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px}
 .detail-header h3{font-size:1.05rem;font-weight:800}
 .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-bottom:14px}
@@ -789,17 +791,54 @@ function goTab(name, dir){
 
 // ─── MOBILE SWIPE ────────────────────────────────────────────
 (function(){
-  let sx=0, sy=0;
+  let sx=0, sy=0, dragging=false, el=null, settleTimer=null;
+  const SPRING='transform .38s cubic-bezier(.22,1,.36,1),opacity .38s cubic-bezier(.22,1,.36,1)';
   const content=document.querySelector('.content');
+
   content.addEventListener('touchstart', e=>{
+    clearTimeout(settleTimer);
     sx=e.touches[0].clientX; sy=e.touches[0].clientY;
+    dragging=false;
+    el=document.querySelector('.tab-content.active');
+    if(el) el.style.transition='none';
   }, {passive:true});
-  content.addEventListener('touchend', e=>{
-    const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
-    if(Math.abs(dx)<60 || Math.abs(dx)<Math.abs(dy)*1.5) return;
+
+  content.addEventListener('touchmove', e=>{
+    if(!el) return;
+    const dx=e.touches[0].clientX-sx, dy=e.touches[0].clientY-sy;
+    if(!dragging){
+      if(Math.abs(dx)<10 || Math.abs(dx)<Math.abs(dy)) return;
+      dragging=true;
+    }
     const idx=TAB_ORDER.indexOf(currentTab);
-    if(dx<0 && idx<TAB_ORDER.length-1) goTab(TAB_ORDER[idx+1], 'next');
-    else if(dx>0 && idx>0) goTab(TAB_ORDER[idx-1], 'prev');
+    const atEdge=(dx>0 && idx===0)||(dx<0 && idx===TAB_ORDER.length-1);
+    const eased=atEdge?dx*0.28:dx;
+    el.style.transform=`translateX(${eased}px)`;
+    el.style.opacity=String(1-Math.min(Math.abs(eased)/380,.45));
+  }, {passive:true});
+
+  content.addEventListener('touchend', e=>{
+    if(!el) return;
+    const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    const idx=TAB_ORDER.indexOf(currentTab);
+    const commit=dragging && Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.5;
+    const target=el;
+    target.style.transition=SPRING;
+
+    if(commit && dx<0 && idx<TAB_ORDER.length-1){
+      target.style.transform='translateX(-32px)';
+      target.style.opacity='0';
+      settleTimer=setTimeout(()=>{ target.style.transition=''; target.style.transform=''; target.style.opacity=''; goTab(TAB_ORDER[idx+1],'next'); }, 200);
+    } else if(commit && dx>0 && idx>0){
+      target.style.transform='translateX(32px)';
+      target.style.opacity='0';
+      settleTimer=setTimeout(()=>{ target.style.transition=''; target.style.transform=''; target.style.opacity=''; goTab(TAB_ORDER[idx-1],'prev'); }, 200);
+    } else {
+      target.style.transform='translateX(0)';
+      target.style.opacity='1';
+      settleTimer=setTimeout(()=>{ target.style.transition=''; target.style.transform=''; target.style.opacity=''; }, 380);
+    }
+    dragging=false; el=null;
   }, {passive:true});
 })();
 
