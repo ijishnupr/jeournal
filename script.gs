@@ -12,21 +12,25 @@ const HEADERS = [
 function doGet(e) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const tz = ss.getSpreadsheetTimeZone(); // sheet's own timezone, not the script project's
+    const tz = ss.getSpreadsheetTimeZone();
     const s = ss.getSheetByName(SHEET_NAME);
     if (!s || s.getLastRow() <= 1) return out({ trades: [] });
-    const rows = s.getDataRange().getValues();
+    const lastRow = s.getLastRow();
+    // Force the Date column to an unambiguous ISO display format. getDisplayValues()
+    // then returns exactly what the sheet shows — no Date-object/timezone round-trip
+    // at all, so it can never drift from what you see in the spreadsheet.
+    s.getRange(2, 2, lastRow - 1, 1).setNumberFormat('yyyy-mm-dd');
+    const range = s.getDataRange();
+    const rows = range.getValues();
+    const display = range.getDisplayValues();
     rows.shift(); // remove header row
+    display.shift();
     const clean = rows.map((row, idx) => {
       const processed = row.map((cell, colIdx) => {
+        if (colIdx === 1) return display[idx][colIdx]; // Date — read exactly as shown in the sheet
         if (cell instanceof Date) {
           if (colIdx === 0) return cell.toISOString(); // Timestamp
-          if (cell.getFullYear() <= 1900) {
-            // Time value stored by Sheets — format as HH:MM
-            return Utilities.formatDate(cell, tz, 'HH:mm');
-          }
-          // Date value — format as YYYY-MM-DD
-          return Utilities.formatDate(cell, tz, 'yyyy-MM-dd');
+          return Utilities.formatDate(cell, tz, 'HH:mm'); // time-only cells
         }
         return cell;
       });

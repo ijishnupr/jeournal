@@ -57,9 +57,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .nav-brand{font-size:1.1rem;font-weight:800;display:flex;align-items:center;gap:9px;
   background:linear-gradient(135deg,var(--primary),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .nav-brand svg{stroke:url(#brandGrad);flex-shrink:0;-webkit-text-fill-color:initial}
-.nav-brand svg polyline{stroke-dasharray:10 36;stroke-dashoffset:0;animation:brandPulse 2.2s linear infinite}
+.nav-brand svg polyline{stroke-dasharray:10 36;stroke-dashoffset:0;animation:brandPulse 2.2s linear infinite,brandColor 2.2s linear infinite}
 @keyframes brandPulse{to{stroke-dashoffset:-46}}
-@media(prefers-reduced-motion:reduce){.nav-brand svg polyline{animation:none}}
+@keyframes brandColor{0%,45%{stroke:#10b981}55%,100%{stroke:#ef4444}}
+@media(prefers-reduced-motion:reduce){.nav-brand svg polyline{animation:none;stroke:url(#brandGrad)}}
 .nav-right{display:flex;align-items:center;gap:8px}
 
 /* ── BUTTONS ── */
@@ -106,6 +107,11 @@ pre{background:#060d1f;color:#a5b4fc;padding:16px;border-radius:10px;font-size:.
 /* ── CONTENT ── */
 .content{padding:24px;max-width:1240px;margin:0 auto}
 .tab-content{display:none}.tab-content.active{display:block}
+.tab-content.slide-in-right{animation:slideInRight .28s ease}
+.tab-content.slide-in-left{animation:slideInLeft .28s ease}
+@keyframes slideInRight{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:translateX(0)}}
+@media(prefers-reduced-motion:reduce){.tab-content.slide-in-right,.tab-content.slide-in-left{animation:none}}
 
 /* ── CARD ── */
 .card{background:var(--card);border-radius:14px;border:1px solid var(--border);box-shadow:var(--shadow);transition:background .25s,border-color .25s;overflow:hidden}
@@ -322,16 +328,21 @@ function doGet(e) {
     const tz = ss.getSpreadsheetTimeZone();
     const s = ss.getSheetByName(SHEET_NAME);
     if (!s || s.getLastRow() <= 1) return out({ trades: [] });
-    const rows = s.getDataRange().getValues();
+    const lastRow = s.getLastRow();
+    // Force the Date column to an unambiguous ISO display format. getDisplayValues()
+    // then returns exactly what the sheet shows — no Date-object/timezone round-trip.
+    s.getRange(2, 2, lastRow - 1, 1).setNumberFormat('yyyy-mm-dd');
+    const range = s.getDataRange();
+    const rows = range.getValues();
+    const display = range.getDisplayValues();
     rows.shift();
+    display.shift();
     const clean = rows.map((row, idx) => {
       const processed = row.map((cell, colIdx) => {
+        if (colIdx === 1) return display[idx][colIdx]; // Date — read exactly as shown in the sheet
         if (cell instanceof Date) {
           if (colIdx === 0) return cell.toISOString(); // Timestamp — keep full ISO string
-          if (cell.getFullYear() <= 1900) {
-            return Utilities.formatDate(cell, tz, 'HH:mm');
-          }
-          return Utilities.formatDate(cell, tz, 'yyyy-MM-dd');
+          return Utilities.formatDate(cell, tz, 'HH:mm');
         }
         return cell;
       });
@@ -760,11 +771,17 @@ function copyScript(){
 // ─── TABS ────────────────────────────────────────────────────
 const TAB_ORDER=['new','history','stats','calendar'];
 let currentTab='new';
-function goTab(name){
+function goTab(name, dir){
   currentTab=name;
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',TAB_ORDER[i]===name));
-  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active','slide-in-left','slide-in-right'));
+  const el=document.getElementById('tab-'+name);
+  el.classList.add('active');
+  if(dir){
+    const cls=dir==='next'?'slide-in-right':'slide-in-left';
+    el.classList.add(cls);
+    el.addEventListener('animationend', ()=>el.classList.remove(cls), {once:true});
+  }
   if (name==='history') renderHistory();
   if (name==='stats') renderStats();
   if (name==='calendar') renderCalendar();
@@ -781,8 +798,8 @@ function goTab(name){
     const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
     if(Math.abs(dx)<60 || Math.abs(dx)<Math.abs(dy)*1.5) return;
     const idx=TAB_ORDER.indexOf(currentTab);
-    if(dx<0 && idx<TAB_ORDER.length-1) goTab(TAB_ORDER[idx+1]);
-    else if(dx>0 && idx>0) goTab(TAB_ORDER[idx-1]);
+    if(dx<0 && idx<TAB_ORDER.length-1) goTab(TAB_ORDER[idx+1], 'next');
+    else if(dx>0 && idx>0) goTab(TAB_ORDER[idx-1], 'prev');
   }, {passive:true});
 })();
 
