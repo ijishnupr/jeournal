@@ -466,7 +466,18 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
 
               <div class="form-section"><span>Analysis</span></div>
 
-              <div class="fg"><label>Strategy / Setup</label><input type="text" id="fSetup" placeholder="Breakout, Mean Reversion…"></div>
+              <div class="fg"><label>Strategy / Setup</label>
+                <select id="fSetupSelect" onchange="onSetupSelectChange()">
+                  <option value="">Select strategy…</option>
+                  <option>Bullish Continuation</option>
+                  <option>Bullish Continuation with Claude</option>
+                  <option>Bearish Continuation</option>
+                  <option>Bearish Continuation with Claude</option>
+                  <option value="__custom__">Custom…</option>
+                </select>
+                <input type="text" id="fSetupCustom" placeholder="Enter custom strategy…" oninput="onSetupCustomInput()" style="display:none;margin-top:6px">
+                <input type="hidden" id="fSetup">
+              </div>
               <div class="fg"><label>Trade Rating</label>
                 <div class="stars">
                   <input type="radio" id="r5" name="rating" value="5"><label for="r5">★</label>
@@ -928,7 +939,7 @@ function editTrade(rowNum, ts){
   document.getElementById('fSL').value=t.sl||'';
   document.getElementById('fTP').value=t.tp||'';
   document.getElementById('fCharges').value=12;
-  document.getElementById('fSetup').value=t.setup||'';
+  setSetupValue(t.setup||'');
   document.getElementById('fNotes').value=t.notes||'';
   document.getElementById('fMistakes').value=t.mistakes||'';
 
@@ -1222,8 +1233,47 @@ function resetForm(){
   document.getElementById('fCharges').value=12;
   document.getElementById('fTimeTaken').value='';
   document.getElementById('r3').checked=true;
+  setSetupValue('');
   clearImage();
   document.getElementById('pnlLive').classList.add('hidden');
+}
+
+const SETUP_PRESETS = ['Bullish Continuation','Bullish Continuation with Claude','Bearish Continuation','Bearish Continuation with Claude'];
+
+function onSetupSelectChange(){
+  const sel=document.getElementById('fSetupSelect').value;
+  const custom=document.getElementById('fSetupCustom');
+  if(sel==='__custom__'){
+    custom.style.display='block';
+    custom.value='';
+    custom.focus();
+    document.getElementById('fSetup').value='';
+  } else {
+    custom.style.display='none';
+    custom.value='';
+    document.getElementById('fSetup').value=sel;
+  }
+}
+function onSetupCustomInput(){
+  document.getElementById('fSetup').value=document.getElementById('fSetupCustom').value;
+}
+function setSetupValue(v){
+  const sel=document.getElementById('fSetupSelect');
+  const custom=document.getElementById('fSetupCustom');
+  document.getElementById('fSetup').value=v||'';
+  if(v && SETUP_PRESETS.includes(v)){
+    sel.value=v;
+    custom.style.display='none';
+    custom.value='';
+  } else if(v){
+    sel.value='__custom__';
+    custom.style.display='block';
+    custom.value=v;
+  } else {
+    sel.value='';
+    custom.style.display='none';
+    custom.value='';
+  }
 }
 
 // ─── UTILS ───────────────────────────────────────────────────
