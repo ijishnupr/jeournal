@@ -76,6 +76,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .btn-sm{padding:4px 9px;font-size:.77rem;border-radius:6px}
 .btn-icon{width:34px;height:34px;padding:0;justify-content:center;border-radius:8px}
 
+/* ── SWITCH ── */
+.switch-row{display:flex;align-items:center;gap:8px;margin-top:6px;position:relative;z-index:1}
+.switch{position:relative;display:inline-block;width:34px;height:20px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.switch-track{position:absolute;inset:0;background:var(--border2);border-radius:20px;cursor:pointer;transition:background .15s}
+.switch-track::before{content:'';position:absolute;left:2px;top:2px;width:16px;height:16px;background:#fff;border-radius:50%;
+  box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .15s}
+.switch input:checked+.switch-track{background:var(--primary)}
+.switch input:checked+.switch-track::before{transform:translateX(14px)}
+.switch-label{font-size:.75rem;color:var(--muted);cursor:pointer;user-select:none}
+
 /* ── THEME TOGGLE ── */
 .theme-btn{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;
   cursor:pointer;border:1px solid var(--border2);background:var(--card2);transition:.15s;font-size:1rem}
@@ -1131,6 +1142,12 @@ async function loadTrades(){
 // ─── PORTFOLIO (FD / Bonds / Stock — not Trades) ──────────────
 let portfolio = {fd:[], bonds:[], stock:[]};
 let showSoldStocks = false;
+let includeStockReturns = localStorage.getItem('tj_pf_stock_gain') !== '0';
+function toggleStockReturns(){
+  includeStockReturns = !includeStockReturns;
+  localStorage.setItem('tj_pf_stock_gain', includeStockReturns ? '1' : '0');
+  renderPortfolio();
+}
 function toggleSoldStocks(){
   showSoldStocks = !showSoldStocks;
   document.getElementById('pfStockToggle').textContent = showSoldStocks ? 'Hide sold' : 'Show sold';
@@ -1174,11 +1191,16 @@ function renderPortfolio(){
   const stockValue=stockInvested+stockRealized;
 
   const totalValue=fdMaturity+bondsMaturity+stockValue;
-  const totalGain=(fdMaturity-fdInvested)+(bondsMaturity-bondsInvested)+stockRealized;
+  const totalGain=(fdMaturity-fdInvested)+(bondsMaturity-bondsInvested)+(includeStockReturns?stockRealized:0);
 
   document.getElementById('pfSummary').innerHTML=`
     <div class="stat-card"><div class="stat-label">Total Portfolio Value</div><div class="stat-val">${pfMoney(totalValue)}</div></div>
-    <div class="stat-card"><div class="stat-label">Expected / Realized Gain</div><div class="stat-val ${totalGain>=0?'pos':'neg'}">${totalGain>=0?'+':''}${pfMoney(totalGain)}</div></div>
+    <div class="stat-card"><div class="stat-label">Expected / Realized Gain</div><div class="stat-val ${totalGain>=0?'pos':'neg'}">${totalGain>=0?'+':''}${pfMoney(totalGain)}</div>
+      <div class="switch-row">
+        <label class="switch"><input type="checkbox" ${includeStockReturns?'checked':''} onchange="toggleStockReturns()"><span class="switch-track"></span></label>
+        <span class="switch-label" onclick="toggleStockReturns()">Include stock returns</span>
+      </div>
+    </div>
     <div class="stat-card"><div class="stat-label">Fixed Deposits</div><div class="stat-val">${pfMoney(fdMaturity)}</div><div class="stat-sub">${fd.length} active · ${pfMoney(fdInvested)} invested</div></div>
     <div class="stat-card"><div class="stat-label">Bonds</div><div class="stat-val">${pfMoney(bondsMaturity)}</div><div class="stat-sub">${bonds.length} active · ${pfMoney(bondsInvested)} invested</div></div>
     <div class="stat-card"><div class="stat-label">Stock Holdings</div><div class="stat-val">${pfMoney(stockValue)}</div><div class="stat-sub">${stockHolding.length} active · ${stockRealized>=0?'+':''}${pfMoney(stockRealized)} realized</div></div>
