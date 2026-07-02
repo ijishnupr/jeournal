@@ -157,14 +157,30 @@ textarea{resize:vertical;min-height:72px}
 .pnl-lbl{font-size:.73rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 .pnl-val{font-size:1.1rem;font-weight:800}
 
-/* ── STATS ── */
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:box-shadow .2s}
-.stat-card:hover{box-shadow:var(--shadow-md)}
-.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--primary),#a78bfa)}
-.stat-label{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
-.stat-val{font-size:1.55rem;font-weight:800;line-height:1}
-.stat-sub{font-size:.75rem;color:var(--muted);margin-top:4px}
+/* ── STATS (Apple-style fluid cards) ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:20px 22px;box-shadow:var(--shadow);position:relative;overflow:hidden;
+  transition:transform .4s cubic-bezier(.22,1,.36,1),box-shadow .4s cubic-bezier(.22,1,.36,1);animation:statIn .5s cubic-bezier(.22,1,.36,1) both}
+.stat-card:hover{transform:translateY(-4px) scale(1.015);box-shadow:var(--shadow-lg)}
+.stat-card::before{content:'';position:absolute;top:-40%;right:-25%;width:130px;height:130px;border-radius:50%;
+  background:radial-gradient(circle,rgba(var(--primary-rgb),.18),transparent 70%);animation:blobFloat 7s ease-in-out infinite;pointer-events:none}
+.stat-card:nth-child(1){animation-delay:.02s}.stat-card:nth-child(2){animation-delay:.05s}.stat-card:nth-child(3){animation-delay:.08s}
+.stat-card:nth-child(4){animation-delay:.11s}.stat-card:nth-child(5){animation-delay:.14s}.stat-card:nth-child(6){animation-delay:.17s}
+.stat-card:nth-child(7){animation-delay:.20s}.stat-card:nth-child(8){animation-delay:.23s}.stat-card:nth-child(9){animation-delay:.26s}
+.stat-card:nth-child(10){animation-delay:.29s}
+@keyframes blobFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(-10px,10px)}}
+@keyframes statIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.stat-label{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;position:relative;z-index:1}
+.stat-val{font-size:1.65rem;font-weight:800;line-height:1;position:relative;z-index:1;letter-spacing:-.01em}
+.stat-sub{font-size:.75rem;color:var(--muted);margin-top:4px;position:relative;z-index:1}
+@media(prefers-reduced-motion:reduce){.stat-card,.stat-card::before{animation:none}}
+#tab-stats .card{border-radius:22px;transition:box-shadow .35s cubic-bezier(.22,1,.36,1)}
+#tab-stats .card:hover{box-shadow:var(--shadow-md)}
+#tab-stats .card-header{padding:18px 24px}
+#tab-stats .two-col{gap:16px}
+#tab-stats table{min-width:0}
+#tab-stats td,#tab-stats th{padding:12px 16px}
+#tab-stats tr:last-child td{border-bottom:none}
 .pos{color:var(--success)}.neg{color:var(--danger)}
 
 /* ── TABLE ── */
@@ -236,7 +252,8 @@ tr:hover td{background:var(--row-hover)}
 /* ── DOW CHART ── */
 .dow-wrap{display:flex;gap:6px;align-items:flex-end;height:110px;padding:0 4px}
 .dow-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;justify-content:flex-end}
-.dow-bar{width:100%;border-radius:4px 4px 0 0;min-height:3px;opacity:.85}
+.dow-bar{width:100%;border-radius:8px;min-height:5px;opacity:.85;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .3s ease;transform-origin:bottom}
+.dow-col:hover .dow-bar{opacity:1;transform:scaleY(1.04)}
 .dow-lbl{font-size:.65rem;color:var(--muted);font-weight:600}
 .dow-val{font-size:.7rem;font-weight:700}
 /* ── TWO-COL GRID ── */
@@ -244,7 +261,7 @@ tr:hover td{background:var(--row-hover)}
 /* ── CALENDAR ── */
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .cal-day-hdr{text-align:center;font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;padding:6px 0}
-.cal-cell{min-height:78px;border:1px solid var(--border);border-radius:10px;padding:9px 10px;background:var(--card2);transition:.15s}
+.cal-cell{min-height:78px;border:1px solid var(--border);border-radius:10px;padding:9px 10px;background:var(--card2);transition:.15s;position:relative}
 .cal-cell.empty{background:transparent;border-color:transparent;pointer-events:none}
 .cal-cell.profit{background:rgba(16,185,129,.13);border-color:rgba(16,185,129,.35)}
 .cal-cell.loss{background:rgba(239,68,68,.11);border-color:rgba(239,68,68,.3)}
@@ -252,9 +269,15 @@ tr:hover td{background:var(--row-hover)}
 .cal-cell.has-t:hover{box-shadow:var(--shadow-md)}
 .cal-cell.today{border-color:var(--primary);background:rgba(var(--primary-rgb),.06)}
 .cal-cell.today .cal-num{color:var(--primary);font-weight:800}
+.cal-cell.weekend .cal-num{opacity:.55}
+.cal-cell.holiday{border-color:rgba(245,158,11,.5)}
+.cal-cell.holiday::after{content:'';position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:var(--warn)}
 .cal-num{font-size:.8rem;font-weight:600;color:var(--muted)}
 .cal-pnl{font-size:.95rem;font-weight:800;margin-top:4px;line-height:1}
 .cal-cnt{font-size:.68rem;color:var(--muted);margin-top:3px}
+.cal-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.7rem;color:var(--muted);margin-bottom:12px}
+.cal-legend span{display:inline-flex;align-items:center;gap:5px}
+.cal-legend .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
 
 .hidden{display:none!important}
 @media(max-width:768px){
@@ -586,6 +609,7 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
               <option value="dur-desc">Duration: Longest First</option>
               <option value="dur-asc">Duration: Shortest First</option>
             </select>
+            <button class="btn btn-outline btn-sm" onclick="clearHistoryFilters()">✕ Clear Filters</button>
           </div>
         </div>
         <div class="tbl-wrap">
@@ -659,6 +683,7 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
           <div id="calSummary"></div>
         </div>
         <div class="card-body">
+          <div class="cal-legend" id="calLegend"></div>
           <div class="cal-grid" id="calGrid"></div>
         </div>
       </div>
@@ -1091,6 +1116,15 @@ function cancelEdit(){
 }
 
 // ─── HISTORY ─────────────────────────────────────────────────
+function clearHistoryFilters(){
+  document.getElementById('fltSym').value='';
+  document.getElementById('fltDir').value='';
+  document.getElementById('fltMkt').value='';
+  document.getElementById('fltFrom').value='';
+  document.getElementById('fltTo').value='';
+  document.getElementById('fltSort').value='date-desc';
+  renderHistory();
+}
 function renderHistory(){
   const sym=document.getElementById('fltSym').value.toUpperCase();
   const dir=document.getElementById('fltDir').value;
@@ -1297,6 +1331,29 @@ let calMonth = _now.getMonth();
 const CAL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const CAL_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
+// NSE/BSE trading holidays — no public, browser-callable API exists for this
+// (NSE's own endpoints block cross-origin requests), so this is maintained by
+// hand from the official exchange circular. Update once a year.
+// Source (cross-checked 2026-07-02): zerodha.com/marketintel/holiday-calendar, cleartax.in
+const NSE_HOLIDAYS = {
+  '2026-01-15':'Maharashtra Civic Elections',
+  '2026-01-26':'Republic Day',
+  '2026-03-03':'Holi',
+  '2026-03-26':'Shri Ram Navami',
+  '2026-03-31':'Shri Mahavir Jayanti',
+  '2026-04-03':'Good Friday',
+  '2026-04-14':'Dr. Baba Saheb Ambedkar Jayanti',
+  '2026-05-01':'Maharashtra Day',
+  '2026-05-28':'Bakri Id',
+  '2026-06-26':'Muharram',
+  '2026-09-14':'Ganesh Chaturthi',
+  '2026-10-02':'Mahatma Gandhi Jayanti',
+  '2026-10-20':'Dussehra',
+  '2026-11-10':'Diwali (Balipratipada)',
+  '2026-11-24':'Guru Nanak Jayanti',
+  '2026-12-25':'Christmas',
+};
+
 function calNav(dir){
   calMonth += dir;
   if(calMonth < 0){ calMonth=11; calYear--; }
@@ -1326,6 +1383,11 @@ function renderCalendar(){
     ? `<span style="font-size:.82rem;color:var(--muted)">${mCount} trade${mCount>1?'s':''} &nbsp;·&nbsp; </span><span style="font-size:1.05rem;font-weight:800;color:${mPnl>=0?'var(--success)':'var(--danger)'}">${mPnl>=0?'+':''}${mPnl.toFixed(2)}</span>`
     : `<span style="font-size:.82rem;color:var(--muted)">No trades this month</span>`;
 
+  document.getElementById('calLegend').innerHTML = `
+    <span><span class="dot" style="background:var(--warn)"></span>NSE/BSE Holiday</span>
+    <span style="opacity:.6">Dimmed date = Weekend</span>
+  `;
+
   const todayStr = today();
   const [ty,tm,td] = todayStr.split('-').map(Number);
   const firstDow = new Date(calYear, calMonth, 1).getDay();
@@ -1338,8 +1400,12 @@ function renderCalendar(){
     const isToday = calYear===ty && calMonth+1===tm && d===td;
     const pnlCls = data ? (data.pnl>=0?' profit':' loss') : '';
     const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = (firstDow + d - 1) % 7;
+    const isWeekend = dow===0 || dow===6;
+    const holidayName = NSE_HOLIDAYS[dateStr];
     const onclick = data ? ` onclick="viewDayInHistory('${dateStr}')"` : '';
-    html += `<div class="cal-cell${pnlCls}${isToday?' today':''}${data?' has-t':''}"${onclick}>
+    const title = holidayName ? ` title="${escHtml(holidayName)}"` : '';
+    html += `<div class="cal-cell${pnlCls}${isToday?' today':''}${data?' has-t':''}${isWeekend?' weekend':''}${holidayName?' holiday':''}"${onclick}${title}>
       <div class="cal-num">${d}</div>
       ${data?`<div class="cal-pnl ${data.pnl>=0?'pos':'neg'}">${data.pnl>=0?'+':''}${data.pnl.toFixed(0)}</div>
       <div class="cal-cnt">${data.count} trade${data.count>1?'s':''}</div>`:''}
