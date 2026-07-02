@@ -60,6 +60,11 @@ function getPortfolio() {
     if (bondsSheet && bondsSheet.getLastRow() > 1) {
       bondsSheet.getRange(2, 3, bondsSheet.getLastRow() - 1, 2).setNumberFormat('yyyy-mm-dd'); // Invested Date, Mature Date
     }
+    const stockSheet = ss.getSheetByName('stock');
+    if (stockSheet && stockSheet.getLastRow() > 1) {
+      stockSheet.getRange(2, 2, stockSheet.getLastRow() - 1, 1).setNumberFormat('yyyy-mm-dd'); // Buy Date
+      stockSheet.getRange(2, 7, stockSheet.getLastRow() - 1, 1).setNumberFormat('yyyy-mm-dd'); // Sell Date
+    }
 
     const readSheet = (name, filterCol, mustBeNumber) => {
       const sh = ss.getSheetByName(name);
