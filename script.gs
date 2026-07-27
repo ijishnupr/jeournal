@@ -90,7 +90,9 @@ function getPortfolio() {
     };
 
     return out({
-      fd: readSheet('FD', 1, true),       // filter on AMOUNT so the "ONLY REINVESTING ALLOWED..." note row is skipped
+      // filter on AMOUNT so the "ONLY REINVESTING ALLOWED..." note row is skipped, then
+      // drop COMPLETED FDs — they've been reinvested into a new ACTIVE row, so keeping both would double-count
+      fd: readSheet('FD', 1, true).filter(r => String(r['Status'] || '').trim().toUpperCase() !== 'COMPLETED'),
       bonds: readSheet('bonds', 0, false), // filter on Name
       stock: readSheet('stock', 0, false), // filter on Stock
     });

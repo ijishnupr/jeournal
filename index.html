@@ -430,7 +430,7 @@ function getPortfolio() {
       return rows;
     };
     return out({
-      fd: readSheet('FD', 1, true),
+      fd: readSheet('FD', 1, true).filter(r => String(r['Status'] || '').trim().toUpperCase() !== 'COMPLETED'),
       bonds: readSheet('bonds', 0, false),
       stock: readSheet('stock', 0, false),
     });
