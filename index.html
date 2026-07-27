@@ -1233,7 +1233,7 @@ function renderPortfolio(){
   document.getElementById('pfFD').innerHTML=fdSorted.length
     ?`<div class="tbl-wrap"><table><thead><tr><th>Bank</th><th>Amount</th><th>Maturity</th><th>Days Left</th><th>Rate</th><th>Maturity Amt</th></tr></thead><tbody>
       ${fdSorted.map(r=>{const days=daysUntil(r['MATURE DATE']);const soon=days!==null&&days<=30;
-        return `<tr${soon?' style="background:rgba(245,158,11,.08)"':''}><td><strong>${escHtml(r['INVESTMENTS'])}</strong></td><td>${pfMoney(r['AMOUNT'])}</td>
+        return `<tr${soon?' style="background:rgba(245,158,11,.08)"':''}><td><strong>${escHtml(r['INVESTMENTS'])}</strong></td><td><strong>${pfMoney(r['AMOUNT'])}</strong><div class="stat-sub">+${pfMoney(r['RETURN AMOUNT'])} return</div></td>
         <td>${escHtml(r['MATURE DATE'])}</td><td>${days!==null?days+'d':'—'}</td><td>${r['PERCENTAGE']||'—'}%</td><td>${pfMoney(r['MATURE AMOUNT'])}</td></tr>`;}).join('')}
       </tbody></table></div>`
     :'<p style="color:var(--muted);text-align:center;padding:20px">No FDs found.</p>';
@@ -1242,7 +1242,7 @@ function renderPortfolio(){
   const bondsSorted=[...bonds].sort((a,b)=>new Date(a['Mature Date'])-new Date(b['Mature Date']));
   document.getElementById('pfBonds').innerHTML=bondsSorted.length
     ?`<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Platform</th><th>Amount</th><th>Maturity</th><th>Months Left</th><th>Return %</th></tr></thead><tbody>
-      ${bondsSorted.map(r=>`<tr><td><strong>${escHtml(r['Name'])}</strong></td><td>${escHtml(r['App'])}</td><td>${pfMoney(r['Amount invested'])}</td>
+      ${bondsSorted.map(r=>`<tr><td><strong>${escHtml(r['Name'])}</strong></td><td>${escHtml(r['App'])}</td><td><strong>${pfMoney(r['Amount invested'])}</strong><div class="stat-sub">+${pfMoney((+r['Mature amount']||0)-(+r['Amount invested']||0))} return</div></td>
         <td>${escHtml(r['Mature Date'])}</td><td>${r['Months left']??'—'}</td><td>${r['Percentage of return']||'—'}%</td></tr>`).join('')}
       </tbody></table></div>`
     :'<p style="color:var(--muted);text-align:center;padding:20px">No bonds found.</p>';
