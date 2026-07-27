@@ -1205,16 +1205,16 @@ function renderPortfolio(){
         <span class="switch-label" onclick="toggleStockReturns()">Include stock returns</span>
       </div>
     </div>
-    <div class="stat-card"><div class="stat-label">Fixed Deposits</div><div class="stat-val">${pfMoney(fdMaturity)}</div><div class="stat-sub">${fd.length} active · ${pfMoney(fdInvested)} invested</div></div>
-    <div class="stat-card"><div class="stat-label">Bonds</div><div class="stat-val">${pfMoney(bondsMaturity)}</div><div class="stat-sub">${bonds.length} active · ${pfMoney(bondsInvested)} invested</div></div>
+    <div class="stat-card"><div class="stat-label">Fixed Deposits</div><div class="stat-val">${pfMoney(fdInvested)}</div><div class="stat-sub">${fd.length} active · +${pfMoney(fdMaturity-fdInvested)} return</div></div>
+    <div class="stat-card"><div class="stat-label">Bonds</div><div class="stat-val">${pfMoney(bondsInvested)}</div><div class="stat-sub">${bonds.length} active · +${pfMoney(bondsMaturity-bondsInvested)} return</div></div>
     <div class="stat-card"><div class="stat-label">Stock Holdings</div><div class="stat-val">${pfMoney(stockValue)}</div><div class="stat-sub">${stockHolding.length} active · ${stockRealized>=0?'+':''}${pfMoney(stockRealized)} realized</div></div>
   `;
 
   // Allocation bar — categorical, fixed hue order, always direct-labeled (never color-alone)
   const cats=[
-    {label:'Fixed Deposits', val:fdMaturity, color:'#6366f1'},
-    {label:'Bonds', val:bondsMaturity, color:'#14b8a6'},
-    {label:'Stocks', val:stockValue, color:'#a855f7'},
+    {label:'Fixed Deposits', val:fdInvested, color:'#6366f1'},
+    {label:'Bonds', val:bondsInvested, color:'#14b8a6'},
+    {label:'Stocks', val:stockInvested, color:'#a855f7'},
   ].filter(c=>c.val>0);
   const total=cats.reduce((s,c)=>s+c.val,0);
   if(!total){
