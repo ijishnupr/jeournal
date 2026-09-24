@@ -1166,10 +1166,23 @@ function goTab(name, dir){
   const SPRING='transform .38s cubic-bezier(.22,1,.36,1),opacity .38s cubic-bezier(.22,1,.36,1)';
   const content=document.querySelector('.content');
 
+  // A swipe that starts inside something that scrolls sideways (e.g. a wide
+  // table) belongs to that element, not to tab navigation.
+  function inHScroller(node){
+    for(let n=node; n && n!==content; n=n.parentElement){
+      if(n.scrollWidth>n.clientWidth+1){
+        const ox=getComputedStyle(n).overflowX;
+        if(ox==='auto'||ox==='scroll') return true;
+      }
+    }
+    return false;
+  }
+
   content.addEventListener('touchstart', e=>{
     clearTimeout(settleTimer);
     sx=e.touches[0].clientX; sy=e.touches[0].clientY;
     dragging=false;
+    if(inHScroller(e.target)){ el=null; return; }
     el=document.querySelector('.tab-content.active');
     if(el) el.style.transition='none';
   }, {passive:true});
