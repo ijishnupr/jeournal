@@ -96,6 +96,19 @@ service cloud.firestore {
           && request.resource.data.mistakes is string
           && request.resource.data.mistakes.size() <= 5000;
       }
+
+      // Mirror of the FD / bonds / stock sheets (incl. Drive image ids), written
+      // by the app after each sheet refresh so other devices can read it.
+      match /portfolio/{docId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && docId == 'snapshot'
+          && request.resource.data.keys().hasOnly(['fd', 'bonds', 'stock', 'syncedAt'])
+          && request.resource.data.fd is list
+          && request.resource.data.bonds is list
+          && request.resource.data.stock is list
+          && request.resource.data.syncedAt is number;
+      }
     }
 
     // Anything not matched above is denied.

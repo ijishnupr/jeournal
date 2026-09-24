@@ -902,7 +902,8 @@ function signOut(){
 async function onAuthChange(user){
   if (!user){
     if (unsubTrades){ unsubTrades(); unsubTrades = null; }
-    if (currentUser){ cacheClear(); setGasUrl(''); localStorage.removeItem('tj_cache_uid'); }
+    if (unsubPortfolio){ unsubPortfolio(); unsubPortfolio = null; }
+    if (currentUser){ cacheClear(); pfImgClear(); setGasUrl(''); localStorage.removeItem('tj_cache_uid'); }
     currentUser = null; tradesLive = false;
     showLogin();
     return;
@@ -911,6 +912,7 @@ async function onAuthChange(user){
   // The local snapshot belongs to whoever was signed in last — drop it if that wasn't this user.
   if (localStorage.getItem('tj_cache_uid') !== user.uid){
     cacheClear();
+    pfImgClear();
     localStorage.setItem('tj_cache_uid', user.uid);
   }
   const ub = document.getElementById('userBtn');
@@ -924,6 +926,7 @@ async function onAuthChange(user){
   showApp();
   hydrateFromCache();
   subscribeTrades();
+  subscribePortfolio();
 
   // Restore the Apps Script URL saved on the account (seamless login on a new device),
   // or, on a device that already had one, save it up to the account.
@@ -1260,7 +1263,7 @@ function cacheClear(){
 }
 function pfCacheClear(){
   try { localStorage.removeItem(CACHE_PF); } catch(e){}
-  portfolio={fd:[],bonds:[],stock:[]}; pfSyncAt=0;
+  portfolio={fd:[],bonds:[],stock:[]}; pfSyncAt=0; pfMirrorJson='';
 }
 
 // ─── SYNC INDICATOR ──────────────────────────────────────────
@@ -1407,6 +1410,41 @@ function toggleSoldStocks(){
   document.getElementById('pfMFToggle').textContent = label;
   renderPortfolio();
 }
+// ── Firestore mirror ──
+// The sheet stays the source of truth; every refresh that changes something is
+// also written to tradeJournal/{uid}/portfolio/snapshot, so any signed-in
+// device (or this one offline) can paint the portfolio without Apps Script.
+let unsubPortfolio=null, pfMirrorJson='';
+function portfolioDoc(){ return userDoc().collection('portfolio').doc('snapshot'); }
+// Key-order-independent JSON, so a round trip through Firestore compares equal.
+function stableJson(v){
+  if(Array.isArray(v)) return '['+v.map(stableJson).join(',')+']';
+  if(v && typeof v==='object') return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stableJson(v[k])).join(',')+'}';
+  return JSON.stringify(v===undefined?null:v);
+}
+function subscribePortfolio(){
+  if(unsubPortfolio) unsubPortfolio();
+  unsubPortfolio=portfolioDoc().onSnapshot(snap=>{
+    if(!snap.exists) return;
+    const d=snap.data();
+    const at=+d.syncedAt||0;
+    if(at<=pfSyncAt) return;   // what's on screen is as new or newer (includes our own write echoing back)
+    portfolio={fd:d.fd||[], bonds:d.bonds||[], stock:d.stock||[]};
+    pfMirrorJson=stableJson(portfolio);
+    pfSyncAt=at;
+    cacheSet(CACHE_PF, portfolio);
+    renderPortfolio();
+    paintSync();
+  }, err=>console.warn('Portfolio mirror unavailable', err));
+}
+function mirrorPortfolio(){
+  const json=stableJson(portfolio);
+  if(json===pfMirrorJson) return;   // unchanged — no write
+  pfMirrorJson=json;
+  portfolioDoc().set({...portfolio, syncedAt:pfSyncAt})
+    .catch(err=>{ pfMirrorJson=''; console.warn('Portfolio mirror write failed', err); });
+}
+
 async function loadPortfolio(opts={}){
   if(!GAS_URL || !navigator.onLine) return;   // offline: the cached snapshot is already on screen
   if(!opts.force && pfSyncAt && Date.now()-pfSyncAt < STALE_MS) return;
@@ -1420,6 +1458,7 @@ async function loadPortfolio(opts={}){
     cacheSet(CACHE_PF, portfolio);
     pfSyncAt=Date.now();
     renderPortfolio();
+    mirrorPortfolio();
     syncEnd(true);
   } catch(err){
     syncEnd(false);
@@ -1440,8 +1479,16 @@ function daysUntil(dateStr){
 function pfMoney(v){ return '₹'+(+v||0).toLocaleString('en-IN',{maximumFractionDigits:0}); }
 
 // Portfolio images stay private in Drive; the Apps Script hands them over as
-// base64 on request. Kept in memory so reopening one is instant.
+// base64 on request. Each one viewed is kept in Cache Storage (so it opens
+// offline) and as an object URL in memory (so reopening is instant).
+const PF_IMG_CACHE = 'tj-img';   // the service worker leaves this cache alone
 const pfImgCache = new Map();
+const pfImgKey = id => './__pf-img/'+encodeURIComponent(id);
+function pfImgClear(){
+  pfImgCache.forEach(url=>URL.revokeObjectURL(url));
+  pfImgCache.clear();
+  if(window.caches) caches.delete(PF_IMG_CACHE).catch(()=>{});
+}
 function pfImgBtn(r){
   const id=String(r.imageId||'');
   if(!/^[-\w]{20,}$/.test(id)) return '—';
@@ -1449,16 +1496,23 @@ function pfImgBtn(r){
 }
 async function openPfImage(id){
   if(pfImgCache.has(id)){ openLightbox(pfImgCache.get(id)); return; }
-  if(!navigator.onLine){ toast('You\'re offline — images need a connection','err'); return; }
+  const show=blob=>{ const url=URL.createObjectURL(blob); pfImgCache.set(id,url); openLightbox(url); };
+  try {
+    const hit=window.caches && await (await caches.open(PF_IMG_CACHE)).match(pfImgKey(id));
+    if(hit){ show(await hit.blob()); return; }
+  } catch(e){ /* storage unavailable — fall through to the network */ }
+  if(!navigator.onLine){ toast('You\'re offline — this image hasn\'t been opened on this device yet','err'); return; }
+  if(!GAS_URL){ toast('Connect your Apps Script URL (⚙ Settings) to load images','err'); return; }
   loading('Loading image…');
   try {
     const sep=GAS_URL.includes('?')?'&':'?';
     const data=await (await fetch(GAS_URL+sep+'type=image&id='+encodeURIComponent(id))).json();
     if(data.error) throw new Error(data.error==='Unknown request type'?'update the Apps Script (⚙ Settings)':data.error);
     if(!data.base64) throw new Error('update the Apps Script (⚙ Settings) and redeploy');
-    const src='data:'+(data.mimeType||'image/jpeg')+';base64,'+data.base64;
-    pfImgCache.set(id,src);
-    openLightbox(src);
+    const bytes=Uint8Array.from(atob(data.base64), c=>c.charCodeAt(0));
+    const blob=new Blob([bytes], {type:data.mimeType||'image/jpeg'});
+    try { await (await caches.open(PF_IMG_CACHE)).put(pfImgKey(id), new Response(blob)); } catch(e){}
+    show(blob);
   } catch(err){ toast('Image failed: '+err.message,'err'); }
   finally { doneLoading(); }
 }

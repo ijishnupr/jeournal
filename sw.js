@@ -1,4 +1,4 @@
-const CACHE = 'tj-v15';
+const CACHE = 'tj-v16';
 const SHELL = ['./', './index.html', './manifest.json', './icon.svg'];
 // Keep in sync with the <script> tags in index.html. config.js is generated at
 // deploy time, so it's best-effort too (it may not exist in a local checkout).
@@ -24,7 +24,8 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      // tj-img holds portfolio images the page saved for offline use — keep it.
+      Promise.all(keys.filter(k => k !== CACHE && k !== 'tj-img').map(k => caches.delete(k)))
     )
   );
   self.clients.claim();
