@@ -357,8 +357,8 @@ tr:hover td{background:var(--row-hover)}
   <div class="nav-right">
     <span id="navAuthed" style="display:none;align-items:center;gap:8px">
       <span class="sync-pill" id="syncPill" hidden title="Trades sync live with Firebase; the portfolio refreshes from the sheet"><span class="sync-dot"></span><span id="syncTxt">Local</span></span>
-      <button class="btn btn-outline" onclick="openSetup()">✏ Credentials</button>
       <button class="btn btn-outline" onclick="copyUrl()">⎘ Copy URL</button>
+      <button class="theme-btn" onclick="openSetup()" title="Settings">⚙</button>
     </span>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
     <button class="theme-btn user-btn" id="userBtn" onclick="signOut()" title="Sign out" style="display:none"></button>
@@ -381,7 +381,15 @@ tr:hover td{background:var(--row-hover)}
 <!-- SETUP SCREEN -->
 <div id="setupScreen" class="setup-screen" style="display:none">
   <div class="setup-card">
-    <h1>Welcome to Trade Journal</h1>
+    <div id="syncSection" style="display:none;margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid var(--border)">
+      <h1>Settings</h1>
+      <p class="sub" style="margin-bottom:14px">Sync brings trades that exist only in the sheet into the app, then writes every app trade to the sheet. If a trade is in both, the app's version wins.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="syncWithSheet()">⇅ Sync with sheet</button>
+        <button class="btn btn-outline" onclick="showApp()">← Back to journal</button>
+      </div>
+    </div>
+    <h1 id="setupTitle">Welcome to Trade Journal</h1>
     <p class="sub">No OAuth or API keys needed — just paste a script into your Google Sheet and you're ready.</p>
 
     <ol class="steps">
@@ -574,7 +582,7 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
     </div>
     <p style="font-size:.78rem;color:var(--muted);margin-top:8px">The URL is saved to your account, so signing in on any device reconnects the sheet automatically. Trades are stored in Firebase; the sheet is used for chart images, the Portfolio tab, and import/export.</p>
     <div style="margin-top:14px;text-align:right">
-      <button class="btn btn-outline btn-sm" onclick="skipSetup()">Skip — use without a sheet</button>
+      <button class="btn btn-outline btn-sm" id="skipBtn" onclick="skipSetup()">Skip — use without a sheet</button>
     </div>
   </div>
 </div>
@@ -717,8 +725,6 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
         <div class="card-header">
           <h2>Trade History</h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-            <button class="btn btn-outline btn-sm" onclick="importFromSheet()" title="Copy trades from the Google Sheet into Firebase">⇣ Import sheet</button>
-            <button class="btn btn-outline btn-sm" onclick="exportToSheet()" title="Write every Firebase trade into the Google Sheet">⇡ Push to sheet</button>
             <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇ CSV</button>
             <button class="btn btn-outline btn-sm" onclick="loadTrades({force:true})">↻ Refresh</button>
           </div>
@@ -1015,6 +1021,9 @@ function showApp(){
 
 function openSetup(){
   document.getElementById('urlInput').value = GAS_URL;
+  document.getElementById('syncSection').style.display = GAS_URL ? 'block' : 'none';
+  document.getElementById('setupTitle').textContent = GAS_URL ? 'Google Sheet connection' : 'Welcome to Trade Journal';
+  document.getElementById('skipBtn').style.display = GAS_URL ? 'none' : '';
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('setupScreen').style.display = 'flex';
   document.getElementById('mainApp').classList.add('hidden');
@@ -1272,7 +1281,7 @@ async function submitTrade(e){
   try {
     let imgUrl='', driveId='';
     if(imgFile){
-      if(!GAS_URL) throw new Error('Connect your Apps Script URL (✏ Credentials) to attach chart images');
+      if(!GAS_URL) throw new Error('Connect your Apps Script URL (⚙ Settings) to attach chart images');
       if(!navigator.onLine) throw new Error('You\'re offline — remove the chart image to save now, or retry when connected');
       loading('Uploading chart image…');
       const b64 = await toBase64(imgFile);
@@ -1489,53 +1498,48 @@ function needSheet(){
   return false;
 }
 
-// Sheet → Firestore. Trades already in Firestore are left alone, so this is
-// safe to run repeatedly and never overwrites edits made in the app.
-async function importFromSheet(){
+// Two-way sync. Sheet-only trades are copied into Firestore; then every
+// Firestore trade is upserted into the sheet by timestamp. Where a trade
+// exists in both, the Firestore (app) version wins.
+async function syncWithSheet(){
   if(!needSheet()) return;
   loading('Reading Google Sheet…');
   try {
     const data=await (await fetch(GAS_URL)).json();
     if(data.error) throw new Error(data.error);
-    const existing=new Set((await tradesCol().get()).docs.map(d=>d.id));
+    // Work from a fresh server read rather than the listener, so the push
+    // below always includes what was just imported.
+    const all=new Map((await tradesCol().get()).docs.map(d=>[d.id, docToRow(d.data())]));
     const fresh=new Map();
     (data.trades||[]).forEach(r=>{
       if(!r[0]) return;
       const id=tradeDocId(r[0]);
-      if(!existing.has(id)) fresh.set(id, r.slice(0, HEADERS.length));
+      if(!all.has(id)) fresh.set(id, r.slice(0, HEADERS.length));
     });
-    const skipped=(data.trades||[]).length-fresh.size;
     const entries=[...fresh];
     for(let i=0;i<entries.length;i+=400){   // Firestore batches cap at 500 writes
-      loading(`Importing ${Math.min(i+400,entries.length)} / ${entries.length}…`);
+      loading(`Importing ${Math.min(i+400,entries.length)} / ${entries.length} from sheet…`);
       const batch=db.batch();
       entries.slice(i,i+400).forEach(([id,row])=>{
         batch.set(tradesCol().doc(id), {...rowToDoc(row), createdAt:serverTs(), updatedAt:serverTs()});
+        all.set(id,row);
       });
       await batch.commit();
     }
-    toast(`Imported ${entries.length} trade${entries.length===1?'':'s'}`+(skipped?` · ${skipped} already here`:''),'ok');
-  } catch(err){
-    toast('Import failed: '+err.message,'err');
-    console.error(err);
-  } finally { doneLoading(); }
-}
 
-// Firestore → Sheet. Rows with a matching Timestamp are overwritten, the rest appended.
-async function exportToSheet(){
-  if(!needSheet()) return;
-  if(!rawTrades.length){ toast('No trades to push','err'); return; }
-  if(!confirm(`Write ${rawTrades.length} trades to the Google Sheet?\nSheet rows with the same timestamp will be overwritten.`)) return;
-  loading('Writing to Google Sheet…');
-  try {
-    const rows=rawTrades.map(r=>HEADERS.map((_,i)=>r[i]??''));
-    const res=await gasPost({type:'sync', rows});
-    if(res.error==='Unknown request type')
-      throw new Error('your Apps Script is out of date — copy the script from ✏ Credentials and redeploy');
-    if(res.error) throw new Error(res.error);
-    toast(`Sheet updated · ${res.added} added, ${res.updated} updated`,'ok');
+    let added=0;
+    if(all.size){
+      loading('Writing to Google Sheet…');
+      const rows=[...all.values()].map(r=>HEADERS.map((_,i)=>r[i]??''));
+      const res=await gasPost({type:'sync', rows});
+      if(res.error==='Unknown request type')
+        throw new Error('your Apps Script is out of date — copy the script below and redeploy');
+      if(res.error) throw new Error(res.error);
+      added=res.added||0;
+    }
+    toast(`Synced · ${entries.length} new from sheet · ${added} new in sheet`,'ok');
   } catch(err){
-    toast('Push failed: '+err.message,'err');
+    toast('Sync failed: '+err.message,'err');
     console.error(err);
   } finally { doneLoading(); }
 }
