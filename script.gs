@@ -141,7 +141,43 @@ function doPost(e) {
       const rowNum = sheet.getLastRow() + 1;
       sheet.getRange(rowNum, 2).setNumberFormat('@'); // keep Date column as plain text — avoids Sheets/Apps Script timezone conversion bugs
       sheet.getRange(rowNum, 1, 1, data.row.length).setValues([data.row]);
-      return out({ success: true });
+      // Hand the row number back so the client can slot the trade into its local
+      // snapshot without waiting for a full re-read of the sheet.
+      return out({ success: true, rowNum: rowNum });
+    }
+
+    // Bulk upsert from Firestore: rows whose Timestamp already exists are
+    // overwritten in place, everything else is appended in one write.
+    if (data.type === 'sync') {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      let sheet = ss.getSheetByName(SHEET_NAME);
+      if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
+      if (sheet.getLastRow() === 0) sheet.appendRow(HEADERS);
+      const index = {};
+      if (sheet.getLastRow() > 1) {
+        sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues().forEach((r, i) => {
+          const c = r[0];
+          index[c instanceof Date ? c.toISOString() : String(c)] = i + 2;
+        });
+      }
+      const appends = [];
+      let updated = 0;
+      (data.rows || []).forEach(row => {
+        const at = index[String(row[0])];
+        if (at) {
+          sheet.getRange(at, 2).setNumberFormat('@');
+          sheet.getRange(at, 1, 1, row.length).setValues([row]);
+          updated++;
+        } else {
+          appends.push(row);
+        }
+      });
+      if (appends.length) {
+        const start = sheet.getLastRow() + 1;
+        sheet.getRange(start, 2, appends.length, 1).setNumberFormat('@');
+        sheet.getRange(start, 1, appends.length, HEADERS.length).setValues(appends);
+      }
+      return out({ success: true, updated: updated, added: appends.length });
     }
 
     return out({ error: 'Unknown request type' });

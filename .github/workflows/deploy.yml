@@ -1,0 +1,59 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Firebase web config comes from repository variables
+      # (Settings → Secrets and variables → Actions → Variables).
+      - name: Generate config.js
+        env:
+          FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+          FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
+        run: |
+          mkdir _site
+          node -e '
+            const e = process.env;
+            const cfg = {
+              apiKey: e.FIREBASE_API_KEY,
+              authDomain: e.FIREBASE_AUTH_DOMAIN,
+              projectId: e.FIREBASE_PROJECT_ID,
+              storageBucket: e.FIREBASE_STORAGE_BUCKET,
+              messagingSenderId: e.FIREBASE_MESSAGING_SENDER_ID,
+              appId: e.FIREBASE_APP_ID,
+            };
+            const missing = Object.keys(cfg).filter(k => !cfg[k]);
+            if (missing.length) { console.error("Missing repository variables for: " + missing.join(", ")); process.exit(1); }
+            require("fs").writeFileSync("_site/config.js", "window.FIREBASE_CONFIG = " + JSON.stringify(cfg, null, 2) + ";\n");
+          '
+
+      - name: Collect site files
+        run: cp index.html manifest.json icon.svg sw.js _site/
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+      - id: deployment
+        uses: actions/deploy-pages@v4

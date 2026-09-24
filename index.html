@@ -10,6 +10,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TradeJournal">
 <link rel="apple-touch-icon" href="./icon.svg">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="./config.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 
@@ -62,6 +66,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 @keyframes brandColor{0%,45%{stroke:#10b981}55%,100%{stroke:#ef4444}}
 @media(prefers-reduced-motion:reduce){.nav-brand svg polyline{animation:none;stroke:url(#brandGrad)}}
 .nav-right{display:flex;align-items:center;gap:8px}
+.sync-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;
+  font-size:.72rem;font-weight:600;color:var(--sec);background:var(--bg);border:1px solid var(--border);
+  white-space:nowrap;transition:color .2s,border-color .2s}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--success);flex-shrink:0}
+.sync-pill.syncing .sync-dot{background:var(--primary);animation:syncPulse 1s ease-in-out infinite}
+.sync-pill.stale .sync-dot{background:var(--warn)}
+.sync-pill.err .sync-dot{background:var(--danger)}
+@keyframes syncPulse{0%,100%{opacity:1}50%{opacity:.2}}
+@media(prefers-reduced-motion:reduce){.sync-pill.syncing .sync-dot{animation:none}}
 
 /* ── BUTTONS ── */
 .btn{padding:7px 14px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;
@@ -97,6 +110,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .setup-card{background:var(--card);border-radius:18px;padding:40px;max-width:700px;width:100%;box-shadow:var(--shadow-lg);border:1px solid var(--border)}
 .setup-card h1{font-size:1.5rem;font-weight:800;margin-bottom:6px}
 .setup-card p.sub{color:var(--sec);margin-bottom:28px}
+.login-card{max-width:420px;text-align:center}
+.google-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px 16px;
+  border-radius:10px;border:1px solid var(--border2);background:var(--card2);color:var(--text);font-size:.92rem;
+  font-weight:600;cursor:pointer;transition:.15s}
+.google-btn:hover{border-color:var(--primary);background:var(--card)}
+.google-btn:disabled{opacity:.5;cursor:not-allowed}
+.user-btn{padding:0;overflow:hidden;font-weight:700;font-size:.85rem;color:var(--primary)}
+.user-btn img{width:100%;height:100%;object-fit:cover}
 .steps{counter-reset:s;list-style:none}
 .steps li{counter-increment:s;display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);font-size:.875rem;color:var(--sec);align-items:flex-start}
 .steps li:last-child{border-bottom:none}
@@ -334,14 +355,31 @@ tr:hover td{background:var(--row-hover)}
     TradeJournal
   </div>
   <div class="nav-right">
-    <button class="btn btn-outline" onclick="openSetup()">✏ Credentials</button>
-    <button class="btn btn-outline" onclick="copyUrl()">⎘ Copy URL</button>
+    <span id="navAuthed" style="display:none;align-items:center;gap:8px">
+      <span class="sync-pill" id="syncPill" hidden title="Trades sync live with Firebase; the portfolio refreshes from the sheet"><span class="sync-dot"></span><span id="syncTxt">Local</span></span>
+      <button class="btn btn-outline" onclick="openSetup()">✏ Credentials</button>
+      <button class="btn btn-outline" onclick="copyUrl()">⎘ Copy URL</button>
+    </span>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+    <button class="theme-btn user-btn" id="userBtn" onclick="signOut()" title="Sign out" style="display:none"></button>
   </div>
 </nav>
 
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" class="setup-screen" style="display:none">
+  <div class="setup-card login-card">
+    <h1>Trade Journal</h1>
+    <p class="sub">Sign in to sync your trades across devices.</p>
+    <button class="google-btn" id="googleBtn" onclick="signIn()">
+      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.2C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 6.9-10.3 6.9-17.7z"/><path fill="#FBBC05" d="M10.6 28.5c-.5-1.4-.8-2.9-.8-4.5s.3-3.1.8-4.5l-7.9-6.2C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.1 1.4-4.9 2.3-8.2 2.3-6.2 0-11.5-4.2-13.4-9.9l-7.9 6.2C6.6 42.6 14.6 48 24 48z"/></svg>
+      Continue with Google
+    </button>
+    <p id="loginNote" style="font-size:.78rem;color:var(--muted);margin-top:14px"></p>
+  </div>
+</div>
+
 <!-- SETUP SCREEN -->
-<div id="setupScreen" class="setup-screen">
+<div id="setupScreen" class="setup-screen" style="display:none">
   <div class="setup-card">
     <h1>Welcome to Trade Journal</h1>
     <p class="sub">No OAuth or API keys needed — just paste a script into your Google Sheet and you're ready.</p>
@@ -476,7 +514,37 @@ function doPost(e) {
       const rowNum = sheet.getLastRow() + 1;
       sheet.getRange(rowNum, 2).setNumberFormat('@'); // keep Date column as plain text — avoids timezone conversion bugs
       sheet.getRange(rowNum, 1, 1, d.row.length).setValues([d.row]);
-      return out({ success: true });
+      return out({ success: true, rowNum: rowNum });
+    }
+    // Bulk upsert from Firestore: existing Timestamps are overwritten, the rest appended
+    if (d.type === 'sync') {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      let sheet = ss.getSheetByName(SHEET_NAME);
+      if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
+      if (sheet.getLastRow() === 0) sheet.appendRow(HEADERS);
+      const index = {};
+      if (sheet.getLastRow() > 1) {
+        sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues().forEach((r, i) => {
+          const c = r[0];
+          index[c instanceof Date ? c.toISOString() : String(c)] = i + 2;
+        });
+      }
+      const appends = [];
+      let updated = 0;
+      (d.rows || []).forEach(row => {
+        const at = index[String(row[0])];
+        if (at) {
+          sheet.getRange(at, 2).setNumberFormat('@');
+          sheet.getRange(at, 1, 1, row.length).setValues([row]);
+          updated++;
+        } else appends.push(row);
+      });
+      if (appends.length) {
+        const start = sheet.getLastRow() + 1;
+        sheet.getRange(start, 2, appends.length, 1).setNumberFormat('@');
+        sheet.getRange(start, 1, appends.length, HEADERS.length).setValues(appends);
+      }
+      return out({ success: true, updated: updated, added: appends.length });
     }
     return out({ error: 'Unknown request type' });
   } catch(e) { return out({ error: e.message }); }
@@ -504,7 +572,10 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
       <input type="text" id="urlInput" placeholder="https://script.google.com/macros/s/.../exec">
       <button class="btn btn-primary" onclick="saveUrl()">Connect →</button>
     </div>
-    <p style="font-size:.78rem;color:var(--muted);margin-top:8px">The URL is stored locally in your browser — never sent anywhere.</p>
+    <p style="font-size:.78rem;color:var(--muted);margin-top:8px">The URL is saved to your account, so signing in on any device reconnects the sheet automatically. Trades are stored in Firebase; the sheet is used for chart images, the Portfolio tab, and import/export.</p>
+    <div style="margin-top:14px;text-align:right">
+      <button class="btn btn-outline btn-sm" onclick="skipSetup()">Skip — use without a sheet</button>
+    </div>
   </div>
 </div>
 
@@ -645,9 +716,11 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
       <div class="card">
         <div class="card-header">
           <h2>Trade History</h2>
-          <div style="display:flex;gap:8px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+            <button class="btn btn-outline btn-sm" onclick="importFromSheet()" title="Copy trades from the Google Sheet into Firebase">⇣ Import sheet</button>
+            <button class="btn btn-outline btn-sm" onclick="exportToSheet()" title="Write every Firebase trade into the Google Sheet">⇡ Push to sheet</button>
             <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇ CSV</button>
-            <button class="btn btn-outline btn-sm" onclick="loadTrades()">↻ Refresh</button>
+            <button class="btn btn-outline btn-sm" onclick="loadTrades({force:true})">↻ Refresh</button>
           </div>
         </div>
         <div class="card-body" style="padding-bottom:8px">
@@ -755,7 +828,7 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
 
       <div class="card" style="margin-bottom:14px">
         <div class="card-header"><h2>Allocation</h2>
-          <button class="btn btn-outline btn-sm" onclick="loadPortfolio()">↻ Refresh</button>
+          <button class="btn btn-outline btn-sm" onclick="loadPortfolio({force:true})">↻ Refresh</button>
         </div>
         <div class="card-body" id="pfAllocation"></div>
       </div>
@@ -774,6 +847,11 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
       <div class="card">
         <div class="card-header"><h2>Stocks</h2><button class="btn btn-outline btn-sm" id="pfStockToggle" onclick="toggleSoldStocks()">Show sold</button></div>
         <div class="card-body" id="pfStock" style="padding:0 0 8px"></div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="card-header"><h2>Mutual Funds</h2><button class="btn btn-outline btn-sm" id="pfMFToggle" onclick="toggleSoldStocks()">Show sold</button></div>
+        <div class="card-body" id="pfMF" style="padding:0 0 8px"></div>
       </div>
     </div>
 
@@ -814,15 +892,48 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
 // ─── STATE ──────────────────────────────────────────────────
 let GAS_URL = localStorage.getItem('tj_gas_url') || '';
 let trades = [];
+let rawTrades = [];   // last rows exactly as the sheet returned them (what gets cached)
 let imgFile = null;
 let editingTs = null;
-let editingRowNum = null;
 let editingImg = { url:'', driveId:'' };
 
 const HEADERS = ['Timestamp','Date','Entry Time','Exit Time','Time Taken',
   'Symbol','Market','Direction','Entry Price','Exit Price','Quantity',
   'P&L','P&L %','Stop Loss','Take Profit',
   'Strategy','Notes','Mistakes','Rating','Image URL','Drive File ID'];
+
+// ─── FIREBASE ────────────────────────────────────────────────
+// Set by config.js, which the deploy workflow generates from the repository
+// variables (locally: copy config.example.js to config.js).
+const FIREBASE_CONFIG = window.FIREBASE_CONFIG || {};
+// Own top-level collection — never touches the other app's users/{uid} tree.
+const TJ_COLLECTION = 'tradeJournal';
+// Firestore field names, in the same order as HEADERS / sheet columns.
+const TRADE_FIELDS = ['ts','date','entryTime','exitTime','timeTaken',
+  'symbol','market','direction','entryPrice','exitPrice','quantity',
+  'pnl','pnlPct','stopLoss','takeProfit',
+  'strategy','notes','mistakes','rating','imageUrl','driveFileId'];
+
+let fbAuth = null, db = null, currentUser = null, unsubTrades = null, tradesLive = false;
+if (FIREBASE_CONFIG.apiKey && window.firebase) {
+  firebase.initializeApp(FIREBASE_CONFIG);
+  fbAuth = firebase.auth();
+  db = firebase.firestore();
+  // Must run before any other Firestore call. Gives instant offline paint and queued writes.
+  db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+}
+const serverTs = () => firebase.firestore.FieldValue.serverTimestamp();
+function userDoc(){ return db.collection(TJ_COLLECTION).doc(currentUser.uid); }
+function tradesCol(){ return userDoc().collection('trades'); }
+// Timestamp doubles as the doc id, so importing the same sheet twice never duplicates.
+function tradeDocId(ts){ return String(ts).replace(/\//g, '_'); }
+function rowToDoc(row){
+  const d = {};
+  TRADE_FIELDS.forEach((f, i) => { d[f] = row[i] ?? ''; });
+  ['ts','symbol','notes','mistakes'].forEach(f => { d[f] = String(d[f]); });
+  return d;
+}
+function docToRow(d){ return TRADE_FIELDS.map(f => d[f] ?? ''); }
 
 // ─── THEME ───────────────────────────────────────────────────
 function applyTheme(dark){
@@ -840,10 +951,30 @@ window.addEventListener('load', () => {
   applyTheme(localStorage.getItem('tj_dark') === '1');
   document.getElementById('fDate').value = today();
   document.getElementById('urlInput').value = GAS_URL;
-  if (GAS_URL) { showApp(); loadTrades(); }
+  if (fbAuth) fbAuth.onAuthStateChanged(onAuthChange);
+  else {
+    showLogin();
+    document.getElementById('googleBtn').disabled = true;
+    document.getElementById('loginNote').textContent = window.firebase
+      ? 'Firebase is not configured — config.js is missing or empty.'
+      : 'Could not load Firebase. Check your connection and reload.';
+  }
+  setInterval(paintSync, 30000);   // keep the "updated Xm ago" label honest
+  // Firestore reconnects and flushes queued writes on its own; this just keeps the UI honest.
+  window.addEventListener('offline', () => {
+    paintSync(); paintLoginNote();
+    if (currentUser) toast('Offline — changes are saved on this device and sync later','info');
+  });
+  window.addEventListener('online', () => {
+    paintSync(); paintLoginNote();
+    if (currentUser){ toast('Back online — syncing','ok'); refreshCurrentTab(); }
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && currentUser) refreshCurrentTab();
+  });
 
   document.addEventListener('paste', e => {
-    if (!GAS_URL) return;
+    if (!currentUser) return;
     for (const item of (e.clipboardData?.items || [])) {
       if (item.type.startsWith('image/')) { setImage(item.getAsFile()); break; }
     }
@@ -856,21 +987,137 @@ function today(){ return new Date().toISOString().split('T')[0] }
 function saveUrl(){
   const url = document.getElementById('urlInput').value.trim();
   if (!url.startsWith('https://script.google.com')){ toast('Paste the full Apps Script web app URL','err'); return; }
-  localStorage.setItem('tj_gas_url', url);
-  GAS_URL = url;
+  if (url !== GAS_URL) pfCacheClear();   // different sheet — old portfolio snapshot is meaningless
+  setGasUrl(url);
+  // Save on the account so signing in anywhere reconnects this sheet.
+  userDoc().set({ gasUrl:url, updatedAt:serverTs() }, { merge:true })
+    .catch(err => toast('Could not save URL to your account: '+err.message, 'err'));
   showApp();
-  loadTrades();
+  if (currentTab === 'portfolio') loadPortfolio({force:true});
+}
+
+function setGasUrl(url){
+  GAS_URL = url;
+  if (url) localStorage.setItem('tj_gas_url', url); else localStorage.removeItem('tj_gas_url');
+  document.getElementById('urlInput').value = url;
+}
+
+function skipSetup(){
+  localStorage.setItem('tj_skip_sheet', '1');
+  showApp();
 }
 
 function showApp(){
+  document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('setupScreen').style.display = 'none';
   document.getElementById('mainApp').classList.remove('hidden');
 }
 
 function openSetup(){
   document.getElementById('urlInput').value = GAS_URL;
+  document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('setupScreen').style.display = 'flex';
   document.getElementById('mainApp').classList.add('hidden');
+}
+
+function showLogin(){
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('navAuthed').style.display = 'none';
+  document.getElementById('userBtn').style.display = 'none';
+  paintLoginNote();
+}
+
+// Signing in needs a connection; once signed in, the app works fully offline.
+function paintLoginNote(){
+  if (!fbAuth) return;   // the "not configured" message set at init stays put
+  const offline = !navigator.onLine;
+  document.getElementById('googleBtn').disabled = offline;
+  document.getElementById('loginNote').textContent = offline
+    ? 'You\'re offline — connect to sign in. After that, the app works offline.' : '';
+}
+
+// ─── AUTH ────────────────────────────────────────────────────
+function signIn(){
+  const provider = new firebase.auth.GoogleAuthProvider();
+  fbAuth.signInWithPopup(provider).catch(err => {
+    // Some installed-PWA / in-app browsers can't open popups — fall back to a full redirect.
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment')
+      return fbAuth.signInWithRedirect(provider);
+    if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request')
+      toast('Sign-in failed: '+err.message, 'err');
+  });
+}
+
+function signOut(){
+  if (!confirm('Sign out of '+(currentUser?.email || 'this account')+'?')) return;
+  fbAuth.signOut();   // onAuthChange(null) does the cleanup
+}
+
+async function onAuthChange(user){
+  if (!user){
+    if (unsubTrades){ unsubTrades(); unsubTrades = null; }
+    if (currentUser){ cacheClear(); setGasUrl(''); localStorage.removeItem('tj_cache_uid'); }
+    currentUser = null; tradesLive = false;
+    showLogin();
+    return;
+  }
+  currentUser = user;
+  // The local snapshot belongs to whoever was signed in last — drop it if that wasn't this user.
+  if (localStorage.getItem('tj_cache_uid') !== user.uid){
+    cacheClear();
+    localStorage.setItem('tj_cache_uid', user.uid);
+  }
+  const ub = document.getElementById('userBtn');
+  ub.title = 'Sign out ('+(user.email || '')+')';
+  ub.innerHTML = user.photoURL
+    ? `<img src="${escHtml(user.photoURL)}" alt="" referrerpolicy="no-referrer">`
+    : escHtml((user.displayName || user.email || '?')[0].toUpperCase());
+  ub.style.display = 'flex';
+  document.getElementById('navAuthed').style.display = 'flex';
+
+  showApp();
+  hydrateFromCache();
+  subscribeTrades();
+
+  // Restore the Apps Script URL saved on the account (seamless login on a new device),
+  // or, on a device that already had one, save it up to the account.
+  try {
+    const snap = await userDoc().get();
+    const saved = snap.exists ? (snap.data().gasUrl || '') : '';
+    const profile = { email:user.email || '', displayName:user.displayName || '',
+                      photoURL:user.photoURL || '', updatedAt:serverTs() };
+    if (!snap.exists) profile.createdAt = serverTs();
+    if (saved && saved !== GAS_URL){ pfCacheClear(); setGasUrl(saved); }
+    else if (!saved && GAS_URL) profile.gasUrl = GAS_URL;
+    // Not awaited: offline, the write is queued and would otherwise block startup.
+    userDoc().set(profile, { merge:true }).catch(err => console.warn('Profile sync failed', err));
+  } catch(err){ console.warn('Profile read failed', err); }
+
+  if (!GAS_URL && localStorage.getItem('tj_skip_sheet') !== '1') openSetup();
+  else if (currentTab === 'portfolio') loadPortfolio();
+}
+
+// Live listener: fires first from the offline cache, then from the server, then on every change.
+function subscribeTrades(){
+  if (unsubTrades) unsubTrades();
+  let pending = true;
+  syncStart();
+  unsubTrades = tradesCol().onSnapshot({ includeMetadataChanges:true }, snap => {
+    const rows = snap.docs.map(d => docToRow(d.data()));
+    setTrades(rows);
+    cacheSet(CACHE_TRADES, rows);
+    tradesLive = !snap.metadata.fromCache;
+    if (tradesLive) tradesSyncAt = Date.now();
+    renderTradeViews();
+    if (pending && (tradesLive || !navigator.onLine)){ pending = false; syncEnd(tradesLive); }
+    paintSync();
+  }, err => {
+    if (pending){ pending = false; syncEnd(false); }
+    tradesLive = false;
+    toast('Load error: '+err.message, 'err');
+  });
 }
 
 function copyUrl(){
@@ -900,7 +1147,8 @@ function goTab(name, dir){
   if (name==='history') renderHistory();
   if (name==='stats') renderStats();
   if (name==='calendar') renderCalendar();
-  if (name==='portfolio') loadPortfolio();
+  if (name==='portfolio'){ renderPortfolio(); loadPortfolio(); }
+  paintSync();
 }
 
 // ─── MOBILE SWIPE ────────────────────────────────────────────
@@ -1024,13 +1272,15 @@ async function submitTrade(e){
   try {
     let imgUrl='', driveId='';
     if(imgFile){
+      if(!GAS_URL) throw new Error('Connect your Apps Script URL (✏ Credentials) to attach chart images');
+      if(!navigator.onLine) throw new Error('You\'re offline — remove the chart image to save now, or retry when connected');
       loading('Uploading chart image…');
       const b64 = await toBase64(imgFile);
       const res = await gasPost({ type:'image', base64:b64.split(',')[1], mimeType:imgFile.type, filename:imgFile.name });
       if(res.error) throw new Error(res.error);
       driveId=res.fileId; imgUrl=res.url;
     }
-    loading('Writing to Google Sheets…');
+    loading('Saving trade…');
     const entry=+document.getElementById('fEntry').value||0;
     const exit=+document.getElementById('fExit').value||null;
     const qty=+document.getElementById('fQty').value||0;
@@ -1066,16 +1316,20 @@ async function submitTrade(e){
       rating, imgUrl, driveId
     ];
 
-    const payload=editingTs
-      ? {type:'update', timestamp:editingTs, rowNum:editingRowNum||undefined, row}
-      : {type:'trade', row};
-    const res=await gasPost(payload);
-    if(res.error) throw new Error(res.error);
-    toast(editingTs?'Trade updated!':'Trade saved!','ok');
+    const doc=rowToDoc(row);
+    doc.updatedAt=serverTs();
+    if(!editingTs) doc.createdAt=serverTs();
+    // The live listener repaints every view from the local write immediately.
+    const write=tradesCol().doc(tradeDocId(ts)).set(doc,{merge:true});
+    const wasEdit=!!editingTs;
+    if(navigator.onLine){
+      await write;   // surface rule/permission errors before claiming success
+      toast(wasEdit?'Trade updated!':'Trade saved!','ok');
+    } else {
+      write.catch(err=>toast('Sync failed: '+err.message,'err'));
+      toast('Saved offline — will sync when you reconnect','ok');
+    }
     cancelEdit(); // resets form + clears edit state
-    await loadTrades();
-    renderHistory();
-    renderCalendar();
   } catch(err){
     toast('Error: '+(err.message||'Unknown'),'err');
     console.error(err);
@@ -1118,25 +1372,172 @@ function durationMinutes(v){
   return (h?(+h[1])*60:0) + (m?+m[1]:0);
 }
 
-async function loadTrades(){
-  if(!GAS_URL) return;
+// ─── LOCAL SNAPSHOT ──────────────────────────────────────────
+// The sheet round-trip takes seconds, so nothing on screen ever waits for it:
+// every view renders from a localStorage snapshot immediately, and the sheet
+// response only overwrites that snapshot and re-renders when it lands.
+const CACHE_TRADES='tj_cache_trades', CACHE_PF='tj_cache_portfolio';
+const STALE_MS=60000;   // a snapshot younger than this doesn't trigger a tab-switch refetch
+
+function cacheGet(key){
   try {
-    const r=await fetch(GAS_URL);
-    const data=await r.json();
+    const raw=localStorage.getItem(key);
+    if(!raw) return null;
+    const o=JSON.parse(raw);
+    return (o && o.data!==undefined) ? o : null;
+  } catch(e){ return null; }
+}
+function cacheSet(key,data){
+  try { localStorage.setItem(key, JSON.stringify({at:Date.now(), data})); }
+  catch(e){ /* quota or private mode — the snapshot is an optimisation, never a requirement */ }
+}
+function cacheClear(){
+  try { localStorage.removeItem(CACHE_TRADES); } catch(e){}
+  rawTrades=[]; trades=[]; tradesSyncAt=0;
+  pfCacheClear();
+}
+function pfCacheClear(){
+  try { localStorage.removeItem(CACHE_PF); } catch(e){}
+  portfolio={fd:[],bonds:[],stock:[]}; pfSyncAt=0;
+}
+
+// ─── SYNC INDICATOR ──────────────────────────────────────────
+let tradesSyncAt=0, pfSyncAt=0, syncing=0, syncErr=false;
+function syncStart(){ syncing++; paintSync(); }
+function syncEnd(ok){ syncing=Math.max(0,syncing-1); syncErr=!ok; paintSync(); }
+function agoTxt(at){
+  if(!at) return 'never synced';
+  const m=Math.floor((Date.now()-at)/60000);
+  if(m<1) return 'just now';
+  if(m<60) return m+'m ago';
+  const h=Math.floor(m/60);
+  if(h<24) return h+'h ago';
+  return Math.floor(h/24)+'d ago';
+}
+function paintSync(){
+  const pill=document.getElementById('syncPill');
+  if(!pill) return;
+  pill.hidden=!currentUser;
+  // A connected Firestore listener is current by definition.
+  const at=currentTab==='portfolio' ? pfSyncAt : (tradesLive && navigator.onLine ? Date.now() : tradesSyncAt);
+  const offline=!navigator.onLine;
+  const busy=syncing>0 && !offline;
+  const err=!busy && (offline || syncErr);
+  pill.classList.toggle('syncing', busy);
+  pill.classList.toggle('err', err);
+  pill.classList.toggle('stale', !busy && !err && !!at && Date.now()-at>15*60000);
+  document.getElementById('syncTxt').textContent =
+    busy ? 'Syncing…' : err ? 'Offline · '+agoTxt(at) : 'Synced '+agoTxt(at);
+}
+
+// Paint every view from the last snapshot before any network call is made.
+function hydrateFromCache(){
+  const t=cacheGet(CACHE_TRADES);
+  if(t){ setTrades(t.data); tradesSyncAt=t.at; }
+  const p=cacheGet(CACHE_PF);
+  if(p && p.data){
+    portfolio={fd:p.data.fd||[], bonds:p.data.bonds||[], stock:p.data.stock||[]};
+    pfSyncAt=p.at;
+    renderPortfolio();
+  }
+  renderTradeViews();
+  paintSync();
+}
+
+function mapTradeRow(r){
+  return {
+    ts:String(r[0]||''), date:fmtDate(r[1]), time:fmtTime(r[2]),
+    exitTime:fmtTime(r[3]), timeTaken:String(r[4]||''),
+    sym:String(r[5]||''), mkt:String(r[6]||''), dir:String(r[7]||''),
+    entry:r[8]||'', exit:r[9]||'', qty:r[10]||'',
+    pnl:String(r[11]||''), pct:String(r[12]||''), netPnl:String(r[11]||''),
+    sl:r[13]||'', tp:r[14]||'',
+    setup:String(r[15]||''), notes:String(r[16]||''), mistakes:String(r[17]||''),
+    rating:String(r[18]||''), imgUrl:String(r[19]||''), driveId:String(r[20]||''),
+    rowNum:r[21]||0
+  };
+}
+function setTrades(rows){
+  rawTrades=Array.isArray(rows)?rows:[];
+  trades=rawTrades.map(mapTradeRow);
+}
+function renderTradeViews(){
+  renderStats();
+  renderHistory();
+  renderCalendar();
+}
+
+// Refresh whichever dataset the visible tab uses — used on tab focus.
+function refreshCurrentTab(){
+  if(currentTab==='portfolio') loadPortfolio();
+  else loadTrades();
+}
+
+// Trades are pushed live by the Firestore listener; this only (re)attaches it
+// when it isn't connected, e.g. after an error.
+function loadTrades(opts={}){
+  if(!currentUser) return;
+  if(!unsubTrades || (opts.force && !tradesLive)) subscribeTrades();
+}
+
+// ─── SHEET ⇄ FIRESTORE ───────────────────────────────────────
+function needSheet(){
+  if(!navigator.onLine){ toast('You\'re offline — the sheet needs a connection','err'); return false; }
+  if(GAS_URL) return true;
+  toast('Connect your Apps Script URL first','err');
+  openSetup();
+  return false;
+}
+
+// Sheet → Firestore. Trades already in Firestore are left alone, so this is
+// safe to run repeatedly and never overwrites edits made in the app.
+async function importFromSheet(){
+  if(!needSheet()) return;
+  loading('Reading Google Sheet…');
+  try {
+    const data=await (await fetch(GAS_URL)).json();
     if(data.error) throw new Error(data.error);
-    trades=(data.trades||[]).map(r=>({
-      ts:String(r[0]||''), date:fmtDate(r[1]), time:fmtTime(r[2]),
-      exitTime:fmtTime(r[3]), timeTaken:String(r[4]||''),
-      sym:String(r[5]||''), mkt:String(r[6]||''), dir:String(r[7]||''),
-      entry:r[8]||'', exit:r[9]||'', qty:r[10]||'',
-      pnl:String(r[11]||''), pct:String(r[12]||''), netPnl:String(r[11]||''),
-      sl:r[13]||'', tp:r[14]||'',
-      setup:String(r[15]||''), notes:String(r[16]||''), mistakes:String(r[17]||''),
-      rating:String(r[18]||''), imgUrl:String(r[19]||''), driveId:String(r[20]||''),
-      rowNum:r[21]||0
-    }));
-    renderStats();
-  } catch(err){ toast('Load error: '+err.message,'err'); }
+    const existing=new Set((await tradesCol().get()).docs.map(d=>d.id));
+    const fresh=new Map();
+    (data.trades||[]).forEach(r=>{
+      if(!r[0]) return;
+      const id=tradeDocId(r[0]);
+      if(!existing.has(id)) fresh.set(id, r.slice(0, HEADERS.length));
+    });
+    const skipped=(data.trades||[]).length-fresh.size;
+    const entries=[...fresh];
+    for(let i=0;i<entries.length;i+=400){   // Firestore batches cap at 500 writes
+      loading(`Importing ${Math.min(i+400,entries.length)} / ${entries.length}…`);
+      const batch=db.batch();
+      entries.slice(i,i+400).forEach(([id,row])=>{
+        batch.set(tradesCol().doc(id), {...rowToDoc(row), createdAt:serverTs(), updatedAt:serverTs()});
+      });
+      await batch.commit();
+    }
+    toast(`Imported ${entries.length} trade${entries.length===1?'':'s'}`+(skipped?` · ${skipped} already here`:''),'ok');
+  } catch(err){
+    toast('Import failed: '+err.message,'err');
+    console.error(err);
+  } finally { doneLoading(); }
+}
+
+// Firestore → Sheet. Rows with a matching Timestamp are overwritten, the rest appended.
+async function exportToSheet(){
+  if(!needSheet()) return;
+  if(!rawTrades.length){ toast('No trades to push','err'); return; }
+  if(!confirm(`Write ${rawTrades.length} trades to the Google Sheet?\nSheet rows with the same timestamp will be overwritten.`)) return;
+  loading('Writing to Google Sheet…');
+  try {
+    const rows=rawTrades.map(r=>HEADERS.map((_,i)=>r[i]??''));
+    const res=await gasPost({type:'sync', rows});
+    if(res.error==='Unknown request type')
+      throw new Error('your Apps Script is out of date — copy the script from ✏ Credentials and redeploy');
+    if(res.error) throw new Error(res.error);
+    toast(`Sheet updated · ${res.added} added, ${res.updated} updated`,'ok');
+  } catch(err){
+    toast('Push failed: '+err.message,'err');
+    console.error(err);
+  } finally { doneLoading(); }
 }
 
 // ─── PORTFOLIO (FD / Bonds / Stock — not Trades) ──────────────
@@ -1150,19 +1551,30 @@ function toggleStockReturns(){
 }
 function toggleSoldStocks(){
   showSoldStocks = !showSoldStocks;
-  document.getElementById('pfStockToggle').textContent = showSoldStocks ? 'Hide sold' : 'Show sold';
+  const label = showSoldStocks ? 'Hide sold' : 'Show sold';
+  document.getElementById('pfStockToggle').textContent = label;
+  document.getElementById('pfMFToggle').textContent = label;
   renderPortfolio();
 }
-async function loadPortfolio(){
-  if(!GAS_URL) return;
+async function loadPortfolio(opts={}){
+  if(!GAS_URL || !navigator.onLine) return;   // offline: the cached snapshot is already on screen
+  if(!opts.force && pfSyncAt && Date.now()-pfSyncAt < STALE_MS) return;
+  syncStart();
   try {
     const sep = GAS_URL.includes('?') ? '&' : '?';
     const r = await fetch(GAS_URL + sep + 'type=portfolio');
     const data = await r.json();
     if(data.error) throw new Error(data.error);
     portfolio = { fd:data.fd||[], bonds:data.bonds||[], stock:data.stock||[] };
+    cacheSet(CACHE_PF, portfolio);
+    pfSyncAt=Date.now();
     renderPortfolio();
-  } catch(err){ toast('Portfolio load error: '+err.message,'err'); }
+    syncEnd(true);
+  } catch(err){
+    syncEnd(false);
+    const cached = portfolio.fd.length||portfolio.bonds.length||portfolio.stock.length;
+    toast(cached ? 'Showing saved portfolio — refresh failed' : 'Portfolio load error: '+err.message, 'err');
+  }
 }
 
 function daysUntil(dateStr){
@@ -1177,7 +1589,11 @@ function daysUntil(dateStr){
 function pfMoney(v){ return '₹'+(+v||0).toLocaleString('en-IN',{maximumFractionDigits:0}); }
 
 function renderPortfolio(){
-  const fd=portfolio.fd, bonds=portfolio.bonds, stock=portfolio.stock;
+  const fd=portfolio.fd, bonds=portfolio.bonds;
+  // The stock sheet also carries mutual funds, marked by the name "Mutual-fund".
+  const isMF=r=>String(r['Stock']||'').trim().toLowerCase().replace(/[\s_]+/g,'-')==='mutual-fund';
+  const stock=portfolio.stock.filter(r=>!isMF(r));
+  const mf=portfolio.stock.filter(isMF);
 
   const fdInvested=fd.reduce((s,r)=>s+(+r['AMOUNT']||0),0);
   const fdMaturity=fd.reduce((s,r)=>s+(+r['MATURE AMOUNT']||0),0);
@@ -1189,25 +1605,28 @@ function renderPortfolio(){
   const stockInvested=stockHolding.reduce((s,r)=>s+(+r['Invested amount']||0),0); // cost basis of current holdings
   const stockRealized=stockSold.reduce((s,r)=>s+(+r['Profit']||0),0); // lifetime realized P&L from sold stocks
   const stockValue=stockInvested+stockRealized;
+  const mfHolding=mf.filter(r=>!isSold(r));
+  const mfInvested=mfHolding.reduce((s,r)=>s+(+r['Invested amount']||0),0);
+  const mfRealized=mf.filter(isSold).reduce((s,r)=>s+(+r['Profit']||0),0);
+  const mfValue=mfInvested+mfRealized;
 
-  const totalInvested=fdInvested+bondsInvested+stockInvested;
-  const totalValue=fdMaturity+bondsMaturity+stockValue;
-  const totalGain=(fdMaturity-fdInvested)+(bondsMaturity-bondsInvested)+(includeStockReturns?stockRealized:0);
+  const totalInvested=fdInvested+bondsInvested+stockInvested+mfInvested;
+  const totalGain=(fdMaturity-fdInvested)+(bondsMaturity-bondsInvested)+(includeStockReturns?stockRealized+mfRealized:0);
   const totalGainPct=totalInvested?(totalGain/totalInvested*100):0;
 
   document.getElementById('pfSummary').innerHTML=`
-    <div class="stat-card"><div class="stat-label">Total Portfolio Value</div><div class="stat-val">${pfMoney(totalValue)}</div></div>
     <div class="stat-card"><div class="stat-label">Total Invested</div><div class="stat-val">${pfMoney(totalInvested)}</div></div>
     <div class="stat-card"><div class="stat-label">Expected / Realized Gain</div><div class="stat-val ${totalGain>=0?'pos':'neg'}">${totalGain>=0?'+':''}${pfMoney(totalGain)}</div>
       <div class="stat-sub ${totalGainPct>=0?'pos':'neg'}">${totalGainPct>=0?'+':''}${totalGainPct.toFixed(1)}%</div>
       <div class="switch-row">
         <label class="switch"><input type="checkbox" ${includeStockReturns?'checked':''} onchange="toggleStockReturns()"><span class="switch-track"></span></label>
-        <span class="switch-label" onclick="toggleStockReturns()">Include stock returns</span>
+        <span class="switch-label" onclick="toggleStockReturns()">Include stock &amp; MF returns</span>
       </div>
     </div>
     <div class="stat-card"><div class="stat-label">Fixed Deposits</div><div class="stat-val">${pfMoney(fdInvested)}</div><div class="stat-sub">${fd.length} active · +${pfMoney(fdMaturity-fdInvested)} return</div></div>
     <div class="stat-card"><div class="stat-label">Bonds</div><div class="stat-val">${pfMoney(bondsInvested)}</div><div class="stat-sub">${bonds.length} active · +${pfMoney(bondsMaturity-bondsInvested)} return</div></div>
     <div class="stat-card"><div class="stat-label">Stock Holdings</div><div class="stat-val">${pfMoney(stockValue)}</div><div class="stat-sub">${stockHolding.length} active · ${stockRealized>=0?'+':''}${pfMoney(stockRealized)} realized</div></div>
+    <div class="stat-card"><div class="stat-label">Mutual Funds</div><div class="stat-val">${pfMoney(mfValue)}</div><div class="stat-sub">${mfHolding.length} active · ${mfRealized>=0?'+':''}${pfMoney(mfRealized)} realized</div></div>
   `;
 
   // Allocation bar — categorical, fixed hue order, always direct-labeled (never color-alone)
@@ -1215,6 +1634,7 @@ function renderPortfolio(){
     {label:'Fixed Deposits', val:fdInvested, color:'#6366f1'},
     {label:'Bonds', val:bondsInvested, color:'#14b8a6'},
     {label:'Stocks', val:stockInvested, color:'#a855f7'},
+    {label:'Mutual Funds', val:mfInvested, color:'#ec4899'},
   ].filter(c=>c.val>0);
   const total=cats.reduce((s,c)=>s+c.val,0);
   if(!total){
@@ -1247,16 +1667,21 @@ function renderPortfolio(){
       </tbody></table></div>`
     :'<p style="color:var(--muted);text-align:center;padding:20px">No bonds found.</p>';
 
-  // ── Stock table (long-term holdings — sold stocks hidden unless toggled) ──
-  const stockRows=showSoldStocks?stock:stockHolding;
-  document.getElementById('pfStock').innerHTML=stockRows.length
-    ?`<div class="tbl-wrap"><table><thead><tr><th>Stock</th><th>Buy Date</th><th>Entry</th><th>Qty</th><th>Invested</th><th>Exit</th><th>Sell Date</th><th>Profit</th><th>%</th><th>Status</th></tr></thead><tbody>
-      ${stockRows.map(r=>{const sold=isSold(r);const profit=+r['Profit']||0;
+  // ── Stock & mutual fund tables (sold entries hidden unless toggled) ──
+  document.getElementById('pfStock').innerHTML=holdingsTable(showSoldStocks?stock:stockHolding,'Stock','stock entries');
+  document.getElementById('pfMF').innerHTML=holdingsTable(showSoldStocks?mf:mfHolding,'Fund','mutual fund entries');
+}
+
+function holdingsTable(rows, nameLabel, noun){
+  const isSold=r=>String(r['Status']||'').toLowerCase()==='sold';
+  return rows.length
+    ?`<div class="tbl-wrap"><table><thead><tr><th>${nameLabel}</th><th>Buy Date</th><th>Entry</th><th>Qty</th><th>Invested</th><th>Exit</th><th>Sell Date</th><th>Profit</th><th>%</th><th>Status</th></tr></thead><tbody>
+      ${rows.map(r=>{const sold=isSold(r);const profit=+r['Profit']||0;
         return `<tr><td><strong>${escHtml(r['Stock'])}</strong></td><td>${r['Buy Date']||'—'}</td><td>${r['Entry']??'—'}</td><td>${r['Quantity']??'—'}</td>
         <td>${pfMoney(r['Invested amount'])}</td><td>${r['Exit']??'—'}</td><td>${r['Sell Date']||'—'}</td>
         <td class="${sold?(profit>=0?'ppos':'pneg'):''}">${sold?(profit>=0?'+':'')+profit.toFixed(2):'—'}</td><td>${sold?(r['Percentage']??'—')+'%':'—'}</td><td>${escHtml(r['Status']||'—')}</td></tr>`;}).join('')}
       </tbody></table></div>`
-    :`<p style="color:var(--muted);text-align:center;padding:20px">${showSoldStocks?'No stock entries found.':'No active holdings.'}</p>`;
+    :`<p style="color:var(--muted);text-align:center;padding:20px">${showSoldStocks?'No '+noun+' found.':'No active holdings.'}</p>`;
 }
 
 function toBase64(file){
@@ -1276,7 +1701,6 @@ function editTrade(rowNum, ts){
   if(!t) return;
   goTab('new');
   editingTs=t.ts;
-  editingRowNum=t.rowNum||null;
   editingImg={url:t.imgUrl||'', driveId:t.driveId||''};
 
   document.getElementById('editBanner').classList.remove('hidden');
@@ -1316,7 +1740,6 @@ function editTrade(rowNum, ts){
 
 function cancelEdit(){
   editingTs=null;
-  editingRowNum=null;
   editingImg={url:'',driveId:''};
   document.getElementById('editBanner').classList.add('hidden');
   document.getElementById('formTitle').textContent='Log a Trade';

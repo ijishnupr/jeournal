@@ -1,0 +1,106 @@
+rules_version = '2';
+
+// Every document lives under users/{uid}, so the whole ruleset reduces to
+// "you may only touch your own subtree" plus shape validation on writes.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(
+             ['email', 'displayName', 'photoURL', 'currency', 'createdAt', 'updatedAt']);
+      allow delete: if false;
+
+      // Transactions: both expenses and income live here, distinguished by
+      // `type`. The collection keeps its original name so existing entries and
+      // their ids stay valid.
+      match /expenses/{entryId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.amount is number
+          && request.resource.data.amount > 0
+          && request.resource.data.amount <= 100000000
+          && request.resource.data.type in ['expense', 'income']
+          && request.resource.data.category is string
+          && request.resource.data.category.size() > 0
+          && request.resource.data.category.size() <= 40
+          && request.resource.data.date is timestamp
+          && (!('note' in request.resource.data)
+              || (request.resource.data.note is string
+                  && request.resource.data.note.size() <= 500));
+      }
+
+      match /budgets/{category} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.limit is number
+          && request.resource.data.limit >= 0
+          && request.resource.data.limit <= 100000000;
+      }
+
+      // Categories are user-editable. `slot` indexes the fixed colour palette.
+      match /categories/{categoryKey} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.label is string
+          && request.resource.data.label.size() > 0
+          && request.resource.data.label.size() <= 40
+          && request.resource.data.type in ['expense', 'income']
+          && request.resource.data.slot is int
+          && request.resource.data.slot >= 1
+          && request.resource.data.slot <= 8
+          && (!('icon' in request.resource.data)
+              || (request.resource.data.icon is string
+                  && request.resource.data.icon.size() <= 8))
+          && (!('archived' in request.resource.data)
+              || request.resource.data.archived is bool);
+      }
+    }
+
+    // ── Trade Journal ──────────────────────────────────────────
+    // Separate top-level collection so it never overlaps users/{uid}.
+    // tradeJournal/{uid} holds the profile (incl. the Apps Script URL so
+    // login restores it on any device); trades live in its subcollection.
+    match /tradeJournal/{uid} {
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(
+             ['email', 'displayName', 'photoURL', 'gasUrl', 'createdAt', 'updatedAt'])
+        && (!('gasUrl' in request.resource.data)
+            || (request.resource.data.gasUrl is string
+                && request.resource.data.gasUrl.size() <= 500));
+      allow delete: if false;
+
+      // Doc id is derived from `ts`, so re-importing the sheet never duplicates.
+      match /trades/{tradeId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(
+               ['ts', 'date', 'entryTime', 'exitTime', 'timeTaken',
+                'symbol', 'market', 'direction', 'entryPrice', 'exitPrice', 'quantity',
+                'pnl', 'pnlPct', 'stopLoss', 'takeProfit',
+                'strategy', 'notes', 'mistakes', 'rating', 'imageUrl', 'driveFileId',
+                'createdAt', 'updatedAt'])
+          && request.resource.data.ts is string
+          && request.resource.data.ts.size() > 0
+          && request.resource.data.ts.size() <= 64
+          && request.resource.data.symbol is string
+          && request.resource.data.symbol.size() <= 40
+          && request.resource.data.notes is string
+          && request.resource.data.notes.size() <= 5000
+          && request.resource.data.mistakes is string
+          && request.resource.data.mistakes.size() <= 5000;
+      }
+    }
+
+    // Anything not matched above is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
