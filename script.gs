@@ -11,6 +11,7 @@ const HEADERS = [
 
 function doGet(e) {
   if (e && e.parameter && e.parameter.type === 'portfolio') return getPortfolio();
+  if (e && e.parameter && e.parameter.type === 'image') return getImage(e.parameter.id);
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const tz = ss.getSpreadsheetTimeZone();
@@ -42,60 +43,101 @@ function doGet(e) {
   } catch(err) { return out({ error: err.message }); }
 }
 
+function getPortfolio() {
+  try { return out(portfolioData()); }
+  catch (err) { return out({ error: err.message }); }
+}
+
 // Reads the FD / bonds / stock sheets (never Trades/backtest) for the Portfolio tab.
 // Each sheet is turned into an array of {header: value} objects using its own
 // header row, so it adapts to column changes without needing index mapping.
-function getPortfolio() {
+// A column headed "Image" also gets an `imageId` (the Drive file id) per row.
+function portfolioData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Force any date-looking columns in these sheets to an unambiguous ISO
+  // display format first, same reasoning as the Trades Date column fix —
+  // getDisplayValues() then can't drift from what the sheet actually shows.
+  const fdSheet = ss.getSheetByName('FD');
+  if (fdSheet && fdSheet.getLastRow() > 1) {
+    fdSheet.getRange(2, 3, fdSheet.getLastRow() - 1, 1).setNumberFormat('yyyy-mm-dd'); // MATURE DATE
+  }
+  const bondsSheet = ss.getSheetByName('bonds');
+  if (bondsSheet && bondsSheet.getLastRow() > 1) {
+    bondsSheet.getRange(2, 3, bondsSheet.getLastRow() - 1, 2).setNumberFormat('yyyy-mm-dd'); // Invested Date, Mature Date
+  }
+  const stockSheet = ss.getSheetByName('stock');
+  if (stockSheet && stockSheet.getLastRow() > 1) {
+    stockSheet.getRange(2, 2, stockSheet.getLastRow() - 1, 1).setNumberFormat('yyyy-mm-dd'); // Buy Date
+    stockSheet.getRange(2, 7, stockSheet.getLastRow() - 1, 1).setNumberFormat('yyyy-mm-dd'); // Sell Date
+  }
+
+  const readSheet = (name, filterCol, mustBeNumber) => {
+    const sh = ss.getSheetByName(name);
+    if (!sh || sh.getLastRow() < 2) return [];
+    const range = sh.getRange(1, 1, sh.getLastRow(), sh.getLastColumn());
+    const values = range.getValues();
+    const display = range.getDisplayValues();
+    const headers = values[0];
+    const imgCol = headers.indexOf('Image');
+    const rich = imgCol >= 0 ? sh.getRange(1, imgCol + 1, values.length, 1).getRichTextValues() : null;
+    const rows = [];
+    for (let r = 1; r < values.length; r++) {
+      const key = values[r][filterCol];
+      const keep = mustBeNumber ? (typeof key === 'number' && key > 0) : (key !== '' && key !== null);
+      if (!keep) continue;
+      const obj = {};
+      headers.forEach((h, c) => {
+        if (!h) return;
+        const cell = values[r][c];
+        obj[h] = (cell instanceof Date) ? display[r][c] : (typeof cell === 'object' ? display[r][c] : cell);
+      });
+      if (imgCol >= 0) obj.imageId = resolveImageId(display[r][imgCol], rich[r][0]);
+      rows.push(obj);
+    }
+    return rows;
+  };
+
+  return {
+    // filter on AMOUNT so the "ONLY REINVESTING ALLOWED..." note row is skipped, then
+    // drop COMPLETED FDs — they've been reinvested into a new ACTIVE row, so keeping both would double-count
+    fd: readSheet('FD', 1, true).filter(r => String(r['Status'] || '').trim().toUpperCase() !== 'COMPLETED'),
+    bonds: readSheet('bonds', 0, false), // filter on Name
+    stock: readSheet('stock', 0, false), // filter on Stock
+  };
+}
+
+// The Image cell may be a Drive file chip / hyperlink (use its link) or just a
+// file name (look it up in Drive). Name lookups are cached for 6 hours.
+function resolveImageId(text, rich) {
+  const idFrom = url => ((url || '').match(/[-\w]{25,}/) || [])[0] || '';
+  if (rich) {
+    let id = idFrom(rich.getLinkUrl());
+    if (!id) rich.getRuns().some(run => (id = idFrom(run.getLinkUrl())));
+    if (id) return id;
+  }
+  const name = String(text || '').trim();
+  if (!name) return '';
+  const cache = CacheService.getScriptCache();
+  const key = 'img:' + name.slice(0, 200);
+  const hit = cache.get(key);
+  if (hit !== null) return hit;
+  const files = DriveApp.getFilesByName(name);
+  const id = files.hasNext() ? files.next().getId() : '';
+  cache.put(key, id, 21600);
+  return id;
+}
+
+// Serves a portfolio image as base64 so the Drive file can stay private.
+// This web app is public, so it only serves files referenced from the
+// portfolio sheets — never an arbitrary Drive file id.
+function getImage(id) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-
-    // Force any date-looking columns in these sheets to an unambiguous ISO
-    // display format first, same reasoning as the Trades Date column fix —
-    // getDisplayValues() then can't drift from what the sheet actually shows.
-    const fdSheet = ss.getSheetByName('FD');
-    if (fdSheet && fdSheet.getLastRow() > 1) {
-      fdSheet.getRange(2, 3, fdSheet.getLastRow() - 1, 1).setNumberFormat('yyyy-mm-dd'); // MATURE DATE
-    }
-    const bondsSheet = ss.getSheetByName('bonds');
-    if (bondsSheet && bondsSheet.getLastRow() > 1) {
-      bondsSheet.getRange(2, 3, bondsSheet.getLastRow() - 1, 2).setNumberFormat('yyyy-mm-dd'); // Invested Date, Mature Date
-    }
-    const stockSheet = ss.getSheetByName('stock');
-    if (stockSheet && stockSheet.getLastRow() > 1) {
-      stockSheet.getRange(2, 2, stockSheet.getLastRow() - 1, 1).setNumberFormat('yyyy-mm-dd'); // Buy Date
-      stockSheet.getRange(2, 7, stockSheet.getLastRow() - 1, 1).setNumberFormat('yyyy-mm-dd'); // Sell Date
-    }
-
-    const readSheet = (name, filterCol, mustBeNumber) => {
-      const sh = ss.getSheetByName(name);
-      if (!sh || sh.getLastRow() < 2) return [];
-      const range = sh.getRange(1, 1, sh.getLastRow(), sh.getLastColumn());
-      const values = range.getValues();
-      const display = range.getDisplayValues();
-      const headers = values[0];
-      const rows = [];
-      for (let r = 1; r < values.length; r++) {
-        const key = values[r][filterCol];
-        const keep = mustBeNumber ? (typeof key === 'number' && key > 0) : (key !== '' && key !== null);
-        if (!keep) continue;
-        const obj = {};
-        headers.forEach((h, c) => {
-          if (!h) return;
-          const cell = values[r][c];
-          obj[h] = (cell instanceof Date) ? display[r][c] : cell;
-        });
-        rows.push(obj);
-      }
-      return rows;
-    };
-
-    return out({
-      // filter on AMOUNT so the "ONLY REINVESTING ALLOWED..." note row is skipped, then
-      // drop COMPLETED FDs — they've been reinvested into a new ACTIVE row, so keeping both would double-count
-      fd: readSheet('FD', 1, true).filter(r => String(r['Status'] || '').trim().toUpperCase() !== 'COMPLETED'),
-      bonds: readSheet('bonds', 0, false), // filter on Name
-      stock: readSheet('stock', 0, false), // filter on Stock
-    });
+    const data = portfolioData();
+    const allowed = [].concat(data.fd, data.bonds, data.stock).some(r => r.imageId && r.imageId === id);
+    if (!id || !allowed) return out({ error: 'Image not found' });
+    const blob = DriveApp.getFileById(id).getBlob();
+    return out({ mimeType: blob.getContentType(), base64: Utilities.base64Encode(blob.getBytes()) });
   } catch (err) { return out({ error: err.message }); }
 }
 

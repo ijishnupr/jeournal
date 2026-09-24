@@ -1,4 +1,4 @@
-const CACHE = 'tj-v14';
+const CACHE = 'tj-v15';
 const SHELL = ['./', './index.html', './manifest.json', './icon.svg'];
 // Keep in sync with the <script> tags in index.html. config.js is generated at
 // deploy time, so it's best-effort too (it may not exist in a local checkout).
@@ -48,8 +48,10 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
-  // Generated config: same, so a changed repository variable takes effect on next load.
-  if (url.startsWith(self.location.origin) && url.split('?')[0].endsWith('/config.js')) {
+  // Generated config and the Apps Script source: same, so a changed repository
+  // variable or script update is picked up on the next load.
+  const path = url.split('?')[0];
+  if (url.startsWith(self.location.origin) && (path.endsWith('/config.js') || path.endsWith('/script.gs'))) {
     e.respondWith(fetch(req).then(res => putInCache(req, res)).catch(() => caches.match(req)));
     return;
   }

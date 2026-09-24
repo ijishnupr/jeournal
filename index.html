@@ -89,16 +89,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .btn-sm{padding:4px 9px;font-size:.77rem;border-radius:6px}
 .btn-icon{width:34px;height:34px;padding:0;justify-content:center;border-radius:8px}
 
-/* ── SWITCH ── */
-.switch-row{display:flex;align-items:center;gap:8px;margin-top:6px;position:relative;z-index:1}
-.switch{position:relative;display:inline-block;width:34px;height:20px;flex-shrink:0}
-.switch input{opacity:0;width:0;height:0}
-.switch-track{position:absolute;inset:0;background:var(--border2);border-radius:20px;cursor:pointer;transition:background .15s}
-.switch-track::before{content:'';position:absolute;left:2px;top:2px;width:16px;height:16px;background:#fff;border-radius:50%;
-  box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .15s}
-.switch input:checked+.switch-track{background:var(--primary)}
-.switch input:checked+.switch-track::before{transform:translateX(14px)}
-.switch-label{font-size:.75rem;color:var(--muted);cursor:pointer;user-select:none}
 
 /* ── THEME TOGGLE ── */
 .theme-btn{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;
@@ -404,161 +394,6 @@ tr:hover td{background:var(--row-hover)}
           <strong>Paste this script</strong> and click Save (Ctrl+S)
           <div style="margin-top:8px">
             <button class="btn btn-primary btn-sm" onclick="copyScript()">⎘ Copy Script</button>
-          </div>
-          <div style="display:none">
-            <pre id="scriptCode">const SHEET_NAME = 'Trades';
-const HEADERS = ['Timestamp','Date','Entry Time','Exit Time','Time Taken','Symbol','Market','Direction','Entry Price','Exit Price','Quantity','P&L','P&L %','Stop Loss','Take Profit','Strategy','Notes','Mistakes','Rating','Image URL','Drive File ID'];
-
-function doGet(e) {
-  if (e && e.parameter && e.parameter.type === 'portfolio') return getPortfolio();
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const tz = ss.getSpreadsheetTimeZone();
-    const s = ss.getSheetByName(SHEET_NAME);
-    if (!s || s.getLastRow() <= 1) return out({ trades: [] });
-    const lastRow = s.getLastRow();
-    // Force the Date column to an unambiguous ISO display format. getDisplayValues()
-    // then returns exactly what the sheet shows — no Date-object/timezone round-trip.
-    s.getRange(2, 2, lastRow - 1, 1).setNumberFormat('yyyy-mm-dd');
-    const range = s.getDataRange();
-    const rows = range.getValues();
-    const display = range.getDisplayValues();
-    rows.shift();
-    display.shift();
-    const clean = rows.map((row, idx) => {
-      const processed = row.map((cell, colIdx) => {
-        if (colIdx === 1) return display[idx][colIdx]; // Date — read exactly as shown in the sheet
-        if (cell instanceof Date) {
-          if (colIdx === 0) return cell.toISOString(); // Timestamp — keep full ISO string
-          return Utilities.formatDate(cell, tz, 'HH:mm');
-        }
-        return cell;
-      });
-      processed.push(idx + 2); // sheet row number (1-indexed + header row)
-      return processed;
-    });
-    return out({ trades: clean });
-  } catch(e) { return out({ error: e.message }); }
-}
-
-function getPortfolio() {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const fdSheet = ss.getSheetByName('FD');
-    if (fdSheet && fdSheet.getLastRow() > 1) fdSheet.getRange(2, 3, fdSheet.getLastRow() - 1, 1).setNumberFormat('yyyy-mm-dd');
-    const bondsSheet = ss.getSheetByName('bonds');
-    if (bondsSheet && bondsSheet.getLastRow() > 1) bondsSheet.getRange(2, 3, bondsSheet.getLastRow() - 1, 2).setNumberFormat('yyyy-mm-dd');
-    const stockSheet = ss.getSheetByName('stock');
-    if (stockSheet && stockSheet.getLastRow() > 1) {
-      stockSheet.getRange(2, 2, stockSheet.getLastRow() - 1, 1).setNumberFormat('yyyy-mm-dd');
-      stockSheet.getRange(2, 7, stockSheet.getLastRow() - 1, 1).setNumberFormat('yyyy-mm-dd');
-    }
-    const readSheet = (name, filterCol, mustBeNumber) => {
-      const sh = ss.getSheetByName(name);
-      if (!sh || sh.getLastRow() < 2) return [];
-      const range = sh.getRange(1, 1, sh.getLastRow(), sh.getLastColumn());
-      const values = range.getValues();
-      const display = range.getDisplayValues();
-      const headers = values[0];
-      const rows = [];
-      for (let r = 1; r < values.length; r++) {
-        const key = values[r][filterCol];
-        const keep = mustBeNumber ? (typeof key === 'number' && key > 0) : (key !== '' && key !== null);
-        if (!keep) continue;
-        const obj = {};
-        headers.forEach((h, c) => {
-          if (!h) return;
-          const cell = values[r][c];
-          obj[h] = (cell instanceof Date) ? display[r][c] : cell;
-        });
-        rows.push(obj);
-      }
-      return rows;
-    };
-    return out({
-      fd: readSheet('FD', 1, true).filter(r => String(r['Status'] || '').trim().toUpperCase() !== 'COMPLETED'),
-      bonds: readSheet('bonds', 0, false),
-      stock: readSheet('stock', 0, false),
-    });
-  } catch (e) { return out({ error: e.message }); }
-}
-
-function doPost(e) {
-  try {
-    const d = JSON.parse(e.postData.contents);
-    if (d.type === 'image') {
-      const f = DriveApp.createFile(Utilities.newBlob(Utilities.base64Decode(d.base64), d.mimeType, d.filename));
-      f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      return out({ success:true, fileId:f.getId(), url:'https://drive.google.com/file/d/'+f.getId()+'/view' });
-    }
-    if (d.type === 'update') {
-      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-      if (!sheet) return out({ error: 'Sheet not found' });
-      // Prefer row-number lookup (fast, unambiguous)
-      if (d.rowNum && d.rowNum > 1 && d.rowNum <= sheet.getLastRow()) {
-        sheet.getRange(d.rowNum, 2).setNumberFormat('@'); // keep Date column as plain text — avoids timezone conversion bugs
-        sheet.getRange(d.rowNum, 1, 1, d.row.length).setValues([d.row]);
-        return out({ success: true });
-      }
-      // Fallback: match by timestamp string (handles Date auto-conversion)
-      const values = sheet.getDataRange().getValues();
-      for (let i = 1; i < values.length; i++) {
-        const cell = values[i][0];
-        const cellStr = cell instanceof Date ? cell.toISOString() : String(cell);
-        const sent = String(d.timestamp);
-        if (cellStr === sent || cellStr.split('T')[0] === sent || sent.split('T')[0] === cellStr) {
-          sheet.getRange(i+1, 2).setNumberFormat('@');
-          sheet.getRange(i+1, 1, 1, d.row.length).setValues([d.row]);
-          return out({ success: true });
-        }
-      }
-      return out({ error: 'Trade not found' });
-    }
-    if (d.type === 'trade') {
-      const ss = SpreadsheetApp.getActiveSpreadsheet();
-      let sheet = ss.getSheetByName(SHEET_NAME);
-      if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
-      if (sheet.getLastRow() === 0) sheet.appendRow(HEADERS);
-      const rowNum = sheet.getLastRow() + 1;
-      sheet.getRange(rowNum, 2).setNumberFormat('@'); // keep Date column as plain text — avoids timezone conversion bugs
-      sheet.getRange(rowNum, 1, 1, d.row.length).setValues([d.row]);
-      return out({ success: true, rowNum: rowNum });
-    }
-    // Bulk upsert from Firestore: existing Timestamps are overwritten, the rest appended
-    if (d.type === 'sync') {
-      const ss = SpreadsheetApp.getActiveSpreadsheet();
-      let sheet = ss.getSheetByName(SHEET_NAME);
-      if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
-      if (sheet.getLastRow() === 0) sheet.appendRow(HEADERS);
-      const index = {};
-      if (sheet.getLastRow() > 1) {
-        sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues().forEach((r, i) => {
-          const c = r[0];
-          index[c instanceof Date ? c.toISOString() : String(c)] = i + 2;
-        });
-      }
-      const appends = [];
-      let updated = 0;
-      (d.rows || []).forEach(row => {
-        const at = index[String(row[0])];
-        if (at) {
-          sheet.getRange(at, 2).setNumberFormat('@');
-          sheet.getRange(at, 1, 1, row.length).setValues([row]);
-          updated++;
-        } else appends.push(row);
-      });
-      if (appends.length) {
-        const start = sheet.getLastRow() + 1;
-        sheet.getRange(start, 2, appends.length, 1).setNumberFormat('@');
-        sheet.getRange(start, 1, appends.length, HEADERS.length).setValues(appends);
-      }
-      return out({ success: true, updated: updated, added: appends.length });
-    }
-    return out({ error: 'Unknown request type' });
-  } catch(e) { return out({ error: e.message }); }
-}
-
-function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }</pre>
           </div>
         </div>
       </li>
@@ -1134,8 +969,13 @@ function copyUrl(){
   navigator.clipboard.writeText(GAS_URL).then(()=>toast('URL copied','ok')).catch(()=>toast('Copy failed','err'));
 }
 
-function copyScript(){
-  const text = document.getElementById('scriptCode').textContent;
+async function copyScript(){
+  let text;
+  try {
+    const r = await fetch('./script.gs', {cache:'no-cache'});
+    if (!r.ok) throw new Error(r.status);
+    text = await r.text();
+  } catch(e){ toast('Could not load the script — check your connection','err'); return; }
   navigator.clipboard.writeText(text).then(()=>toast('Script copied — paste into Apps Script editor','ok')).catch(()=>toast('Copy failed','err'));
 }
 
@@ -1560,12 +1400,6 @@ async function syncWithSheet(){
 // ─── PORTFOLIO (FD / Bonds / Stock — not Trades) ──────────────
 let portfolio = {fd:[], bonds:[], stock:[]};
 let showSoldStocks = false;
-let includeStockReturns = localStorage.getItem('tj_pf_stock_gain') !== '0';
-function toggleStockReturns(){
-  includeStockReturns = !includeStockReturns;
-  localStorage.setItem('tj_pf_stock_gain', includeStockReturns ? '1' : '0');
-  renderPortfolio();
-}
 function toggleSoldStocks(){
   showSoldStocks = !showSoldStocks;
   const label = showSoldStocks ? 'Hide sold' : 'Show sold';
@@ -1605,6 +1439,30 @@ function daysUntil(dateStr){
 
 function pfMoney(v){ return '₹'+(+v||0).toLocaleString('en-IN',{maximumFractionDigits:0}); }
 
+// Portfolio images stay private in Drive; the Apps Script hands them over as
+// base64 on request. Kept in memory so reopening one is instant.
+const pfImgCache = new Map();
+function pfImgBtn(r){
+  const id=String(r.imageId||'');
+  if(!/^[-\w]{20,}$/.test(id)) return '—';
+  return `<button class="btn btn-outline btn-sm" title="${escHtml(r['Image']||'')}" onclick="openPfImage('${id}')">View</button>`;
+}
+async function openPfImage(id){
+  if(pfImgCache.has(id)){ openLightbox(pfImgCache.get(id)); return; }
+  if(!navigator.onLine){ toast('You\'re offline — images need a connection','err'); return; }
+  loading('Loading image…');
+  try {
+    const sep=GAS_URL.includes('?')?'&':'?';
+    const data=await (await fetch(GAS_URL+sep+'type=image&id='+encodeURIComponent(id))).json();
+    if(data.error) throw new Error(data.error==='Unknown request type'?'update the Apps Script (⚙ Settings)':data.error);
+    if(!data.base64) throw new Error('update the Apps Script (⚙ Settings) and redeploy');
+    const src='data:'+(data.mimeType||'image/jpeg')+';base64,'+data.base64;
+    pfImgCache.set(id,src);
+    openLightbox(src);
+  } catch(err){ toast('Image failed: '+err.message,'err'); }
+  finally { doneLoading(); }
+}
+
 function renderPortfolio(){
   const fd=portfolio.fd, bonds=portfolio.bonds;
   // The stock sheet also carries mutual funds, marked by the name "Mutual-fund".
@@ -1628,18 +1486,9 @@ function renderPortfolio(){
   const mfValue=mfInvested+mfRealized;
 
   const totalInvested=fdInvested+bondsInvested+stockInvested+mfInvested;
-  const totalGain=(fdMaturity-fdInvested)+(bondsMaturity-bondsInvested)+(includeStockReturns?stockRealized+mfRealized:0);
-  const totalGainPct=totalInvested?(totalGain/totalInvested*100):0;
 
   document.getElementById('pfSummary').innerHTML=`
     <div class="stat-card"><div class="stat-label">Total Invested</div><div class="stat-val">${pfMoney(totalInvested)}</div></div>
-    <div class="stat-card"><div class="stat-label">Expected / Realized Gain</div><div class="stat-val ${totalGain>=0?'pos':'neg'}">${totalGain>=0?'+':''}${pfMoney(totalGain)}</div>
-      <div class="stat-sub ${totalGainPct>=0?'pos':'neg'}">${totalGainPct>=0?'+':''}${totalGainPct.toFixed(1)}%</div>
-      <div class="switch-row">
-        <label class="switch"><input type="checkbox" ${includeStockReturns?'checked':''} onchange="toggleStockReturns()"><span class="switch-track"></span></label>
-        <span class="switch-label" onclick="toggleStockReturns()">Include stock &amp; MF returns</span>
-      </div>
-    </div>
     <div class="stat-card"><div class="stat-label">Fixed Deposits</div><div class="stat-val">${pfMoney(fdInvested)}</div><div class="stat-sub">${fd.length} active · +${pfMoney(fdMaturity-fdInvested)} return</div></div>
     <div class="stat-card"><div class="stat-label">Bonds</div><div class="stat-val">${pfMoney(bondsInvested)}</div><div class="stat-sub">${bonds.length} active · +${pfMoney(bondsMaturity-bondsInvested)} return</div></div>
     <div class="stat-card"><div class="stat-label">Stock Holdings</div><div class="stat-val">${pfMoney(stockValue)}</div><div class="stat-sub">${stockHolding.length} active · ${stockRealized>=0?'+':''}${pfMoney(stockRealized)} realized</div></div>
@@ -1668,10 +1517,10 @@ function renderPortfolio(){
   // ── Fixed Deposits table ──
   const fdSorted=[...fd].sort((a,b)=>new Date(a['MATURE DATE'])-new Date(b['MATURE DATE']));
   document.getElementById('pfFD').innerHTML=fdSorted.length
-    ?`<div class="tbl-wrap"><table><thead><tr><th>Bank</th><th>Amount</th><th>Maturity</th><th>Days Left</th><th>Rate</th><th>Maturity Amt</th></tr></thead><tbody>
+    ?`<div class="tbl-wrap"><table><thead><tr><th>Bank</th><th>Amount</th><th>Maturity</th><th>Days Left</th><th>Rate</th><th>Maturity Amt</th><th>Image</th></tr></thead><tbody>
       ${fdSorted.map(r=>{const days=daysUntil(r['MATURE DATE']);const soon=days!==null&&days<=30;
         return `<tr${soon?' style="background:rgba(245,158,11,.08)"':''}><td><strong>${escHtml(r['INVESTMENTS'])}</strong></td><td><strong>${pfMoney(r['AMOUNT'])}</strong><div class="stat-sub">+${pfMoney(r['RETURN AMOUNT'])} return</div></td>
-        <td>${escHtml(r['MATURE DATE'])}</td><td>${days!==null?days+'d':'—'}</td><td>${r['PERCENTAGE']||'—'}%</td><td>${pfMoney(r['MATURE AMOUNT'])}</td></tr>`;}).join('')}
+        <td>${escHtml(r['MATURE DATE'])}</td><td>${days!==null?days+'d':'—'}</td><td>${r['PERCENTAGE']||'—'}%</td><td>${pfMoney(r['MATURE AMOUNT'])}</td><td>${pfImgBtn(r)}</td></tr>`;}).join('')}
       </tbody></table></div>`
     :'<p style="color:var(--muted);text-align:center;padding:20px">No FDs found.</p>';
 
