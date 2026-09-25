@@ -54,7 +54,7 @@
 }
 
 body{font-family:'Google Sans Text','Google Sans',Roboto,-apple-system,'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;transition:background .2s,color .2s;-webkit-font-smoothing:antialiased}
-h1,h2,h3,.nav-brand,.stat-val,.pnl-val,.cal-pnl{font-family:'Google Sans',Roboto,sans-serif}
+h1,h2,h3,.stat-val,.pnl-val,.cal-pnl{font-family:'Google Sans',Roboto,sans-serif}
 
 /* ── NAV ── */
 .nav{
@@ -62,8 +62,7 @@ h1,h2,h3,.nav-brand,.stat-val,.pnl-val,.cal-pnl{font-family:'Google Sans',Roboto
   padding:0 24px;display:flex;align-items:center;justify-content:space-between;
   height:64px;position:sticky;top:0;z-index:100
 }
-.nav-brand{font-size:1.375rem;font-weight:400;color:var(--sec);letter-spacing:0}
-.nav-right{display:flex;align-items:center;gap:4px}
+.nav-right{display:flex;align-items:center;gap:4px;margin-left:auto}
 .sync-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;
   font-size:.75rem;font-weight:500;color:var(--sec);background:var(--card2);border:1px solid var(--border);
   white-space:nowrap;transition:color .2s,border-color .2s}
@@ -288,7 +287,7 @@ tr:hover td{background:var(--row-hover)}
 .cal-legend span{display:inline-flex;align-items:center;gap:5px}
 .cal-legend .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 
-.hidden{display:none!important}
+.hidden,[hidden]{display:none!important}
 @media(max-width:768px){
   .content{padding:16px}
   .card-body{padding:16px}
@@ -310,6 +309,31 @@ tr:hover td{background:var(--row-hover)}
   .cal-pnl{font-size:.68rem;margin-top:2px}
   .cal-cnt{font-size:.56rem;margin-top:1px}
 }
+
+/* ── NO-TRADE DAYS ── */
+.nt-bar{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.nt-bar.ask,.nt-bar.logged{padding:12px 16px;border:1px solid var(--border);border-radius:16px;background:var(--card)}
+.nt-bar.ask{background:#fef7e0;border-color:transparent}
+[data-dark] .nt-bar.ask{background:rgba(253,214,99,.1);border-color:rgba(253,214,99,.25)}
+.nt-bar.quiet{justify-content:flex-end;margin:-8px 0 8px}
+.nt-txt{flex:1;min-width:0;display:flex;flex-direction:column;font-size:.85rem}
+.nt-txt b{font-weight:500}.nt-txt span{color:var(--sec);font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rchips{display:flex;flex-wrap:wrap;gap:8px}
+.rchip input{position:absolute;opacity:0;pointer-events:none}
+.rchip span{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--border2);font-size:.82rem;font-weight:500;color:var(--sec);cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.rchip span:hover{background:var(--row-hover)}
+.rchip input:checked+span{background:var(--tonal);color:var(--tonal-fg);border-color:transparent}
+.rchip input:checked+span::before{content:'✓';margin-right:6px}
+.rchip input:focus-visible+span{outline:2px solid var(--primary);outline-offset:2px}
+.cal-cell.skip{background:repeating-linear-gradient(135deg,var(--card2) 0 6px,transparent 6px 12px);cursor:pointer}
+.cal-cell.skip:hover,.cal-cell.can-log:hover{box-shadow:var(--shadow-md)}
+.cal-cell.can-log{cursor:pointer}
+.cal-skip{font-size:.72rem;font-weight:500;color:var(--sec);margin-top:4px}
+.nt-item{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.nt-item:last-child{border-bottom:none}
+.wide-names .hb{grid-template-columns:minmax(110px,190px) 1fr 58px}
+.nt-item:hover .tl-n{color:var(--primary)}
+@media(max-width:600px){.cal-skip{font-size:.56rem;margin-top:2px}.cal-cell.skip .cal-cnt{display:none}}
 
 /* ── DASHBOARDS (Stats & Portfolio) ── */
 :root{--on-strong:#fff;--c1:#1a73e8;--c2:#129eaf;--c3:#9334e6;--c4:#e8710a;
@@ -375,7 +399,14 @@ tr:hover td{background:var(--row-hover)}
 .donut-wrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
 .donut{position:relative;flex-shrink:0}
 .donut svg{display:block;transform:rotate(-90deg)}
-.donut svg circle{transition:stroke-dasharray .9s cubic-bezier(.4,0,.2,1)}
+.donut svg{animation:donutSpin 1.2s cubic-bezier(.2,.8,.2,1) both}
+.donut .arc{cursor:default;animation-name:arcIn;animation-timing-function:linear;animation-fill-mode:both;transition:stroke-width .18s ease,opacity .18s ease}
+.donut svg:hover .arc{opacity:.45}
+.donut svg:hover .arc:hover{opacity:1;stroke-width:calc(var(--sw) + 6px)}
+.donut-c{animation:donutPop .5s cubic-bezier(.34,1.56,.64,1) .5s both}
+@keyframes arcIn{from{stroke-dasharray:0 var(--c)}to{stroke-dasharray:var(--len) var(--c)}}
+@keyframes donutSpin{from{transform:rotate(-200deg)}to{transform:rotate(-90deg)}}
+@keyframes donutPop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
 .donut-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .donut-c b{font:400 1.6rem 'Google Sans',Roboto,sans-serif;line-height:1}
 .donut-c span{font-size:.72rem;color:var(--sec);margin-top:4px}
@@ -442,6 +473,17 @@ tr:hover td{background:var(--row-hover)}
 .tile{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:6px;transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden;min-width:0}
 .tile:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
 .tile::after{content:'';position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:var(--ic);opacity:.07}
+.tile>*{position:relative;z-index:1}
+.tile[role=button]{cursor:pointer}
+.tile[role=button]:focus-visible{outline:2px solid var(--ic);outline-offset:2px}
+.tile[role=button]:active{transform:scale(.98)}
+[id^="pf-"]{scroll-margin-top:80px}
+.dash .panel.flash{animation:panelFlash 1.6s ease-out!important}
+@keyframes panelFlash{0%,30%{box-shadow:0 0 0 2px var(--ic),0 0 24px -4px var(--ic)}100%{box-shadow:0 0 0 0 transparent}}
+/* On black the light-mode tint disappears, so dark mode gets its own: a soft glow in the category colour. */
+[data-dark] .tile{background:linear-gradient(160deg,color-mix(in srgb,var(--ic) 14%,#000) 0%,#000 55%);border-color:color-mix(in srgb,var(--ic) 22%,var(--border))}
+[data-dark] .tile::after{background:radial-gradient(circle,var(--ic) 0%,transparent 70%);opacity:.35;width:140px;height:140px;right:-45px;top:-45px}
+[data-dark] .tile:hover{box-shadow:0 0 0 1px color-mix(in srgb,var(--ic) 45%,transparent),0 8px 24px -8px color-mix(in srgb,var(--ic) 50%,transparent)}
 .tile-l{font-size:.82rem;color:var(--sec);font-weight:500;margin-top:8px}
 .tile-v{font:400 1.5rem 'Google Sans',Roboto,sans-serif;font-variant-numeric:tabular-nums}
 .tile-s{font-size:.75rem;color:var(--muted)}
@@ -482,7 +524,7 @@ tr:hover td{background:var(--row-hover)}
 }
 @media(prefers-reduced-motion:reduce){
   .draw,.fade-up,.hb-f,.vb-f,.lg-bar div,.tile-bar div,.tl-p div,.cmp-t div,.split div,.form-row i{animation:none;stroke-dashoffset:0}
-  .donut svg circle{transition:none}
+  .donut svg,.donut .arc,.donut-c{animation:none}
 }
 
 .hero-split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:24px;align-items:center}
@@ -496,9 +538,6 @@ tr:hover td{background:var(--row-hover)}
 
 <!-- NAV -->
 <nav class="nav">
-  <div class="nav-brand">
-    TradeJournal
-  </div>
   <div class="nav-right">
     <span id="navAuthed" style="display:none;align-items:center;gap:8px">
       <span class="sync-pill" id="syncPill" hidden title="Trades sync live with Firebase; the portfolio refreshes from the sheet"><span class="sync-dot"></span><span id="syncTxt">Local</span></span>
@@ -591,6 +630,7 @@ tr:hover td{background:var(--row-hover)}
 
     <!-- NEW TRADE -->
     <div id="tab-new" class="tab-content active">
+      <div id="noTradeNudge"></div>
       <div class="card">
         <div id="editBanner" class="edit-banner hidden">
           <span>✏ Editing trade — changes will overwrite the original row</span>
@@ -787,6 +827,20 @@ tr:hover td{background:var(--row-hover)}
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lb-close">×</button>
   <img id="lbImg" src="" alt="chart">
+</div>
+
+<!-- NO-TRADE DAY -->
+<div class="detail-modal" id="noTradeModal" onclick="if(event.target===this)closeNoTrade()">
+  <form class="detail-card" onsubmit="saveNoTrade(event)">
+    <div class="detail-header"><h3>Why no trade?</h3><button type="button" class="btn btn-ghost btn-icon" onclick="closeNoTrade()">✕</button></div>
+    <div class="fg" style="margin-bottom:14px"><label for="ntDate">Date</label><input type="date" id="ntDate" required onchange="ntDateChanged()"><span id="ntWarn" class="muted-s"></span></div>
+    <label style="display:block;margin-bottom:8px">Reason</label>
+    <div class="rchips"><label class="rchip"><input type="radio" name="ntReason" value="no-setup"><span>No valid setup</span></label><label class="rchip"><input type="radio" name="ntReason" value="choppy"><span>Market choppy / unclear</span></label><label class="rchip"><input type="radio" name="ntReason" value="waited"><span>Waited, entry never came</span></label><label class="rchip"><input type="radio" name="ntReason" value="news"><span>News / event risk</span></label><label class="rchip"><input type="radio" name="ntReason" value="limit"><span>Hit my loss limit</span></label><label class="rchip"><input type="radio" name="ntReason" value="headspace"><span>Not in the right headspace</span></label><label class="rchip"><input type="radio" name="ntReason" value="busy"><span>Busy / away</span></label><label class="rchip"><input type="radio" name="ntReason" value="off"><span>Planned day off</span></label><label class="rchip"><input type="radio" name="ntReason" value="other"><span>Other</span></label></div>
+    <div class="fg" style="margin-top:14px"><label for="ntNote">Note <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+      <textarea id="ntNote" maxlength="1000" placeholder="What did you see? What would have made you take a trade?"></textarea></div>
+    <div class="detail-actions"><button type="button" class="btn btn-outline" id="ntDelete" onclick="deleteNoTrade()" style="margin-right:auto;color:var(--danger)">Delete</button>
+      <button type="button" class="btn btn-outline" onclick="closeNoTrade()">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
+  </form>
 </div>
 
 <!-- TRADE DETAIL -->
@@ -990,6 +1044,7 @@ async function onAuthChange(user){
   if (!user){
     if (unsubTrades){ unsubTrades(); unsubTrades = null; }
     if (unsubPortfolio){ unsubPortfolio(); unsubPortfolio = null; }
+    if (unsubNoTrades){ unsubNoTrades(); unsubNoTrades = null; }
     if (currentUser){ cacheClear(); pfImgClear(); setGasUrl(''); localStorage.removeItem('tj_cache_uid'); }
     currentUser = null; tradesLive = false;
     showLogin();
@@ -1014,6 +1069,7 @@ async function onAuthChange(user){
   hydrateFromCache();
   subscribeTrades();
   subscribePortfolio();
+  subscribeNoTrades();
 
   // Restore the Apps Script URL saved on the account (seamless login on a new device),
   // or, on a device that already had one, save it up to the account.
@@ -1344,8 +1400,8 @@ function cacheSet(key,data){
   catch(e){ /* quota or private mode — the snapshot is an optimisation, never a requirement */ }
 }
 function cacheClear(){
-  try { localStorage.removeItem(CACHE_TRADES); } catch(e){}
-  rawTrades=[]; trades=[]; tradesSyncAt=0;
+  try { localStorage.removeItem(CACHE_TRADES); localStorage.removeItem(CACHE_NT); } catch(e){}
+  rawTrades=[]; trades=[]; tradesSyncAt=0; noTrades={};
   pfCacheClear();
 }
 function pfCacheClear(){
@@ -1386,6 +1442,8 @@ function paintSync(){
 function hydrateFromCache(){
   const t=cacheGet(CACHE_TRADES);
   if(t){ setTrades(t.data); tradesSyncAt=t.at; }
+  const nt=cacheGet(CACHE_NT);
+  if(nt) noTrades=nt.data||{};
   const p=cacheGet(CACHE_PF);
   if(p && p.data){
     portfolio={fd:p.data.fd||[], bonds:p.data.bonds||[], stock:p.data.stock||[]};
@@ -1414,6 +1472,7 @@ function setTrades(rows){
   trades=rawTrades.map(mapTradeRow);
 }
 function renderTradeViews(){
+  renderNoTradeNudge();
   renderStats();
   renderHistory();
   renderCalendar();
@@ -1648,13 +1707,13 @@ function renderPortfolio(){
 
   // Categorical slots in fixed order — colour follows the asset class, never its rank.
   const cats=[
-    {label:'Fixed Deposits', val:fdInvested, color:'var(--c1)', icon:'bank', show:fdInvested,
+    {key:'fd', label:'Fixed Deposits', val:fdInvested, color:'var(--c1)', icon:'bank', show:fdInvested,
       sub:`${fd.length} active · +${pfMoney(fdMaturity-fdInvested)} at maturity`},
-    {label:'Bonds', val:bondsInvested, color:'var(--c2)', icon:'doc', show:bondsInvested,
+    {key:'bonds', label:'Bonds', val:bondsInvested, color:'var(--c2)', icon:'doc', show:bondsInvested,
       sub:`${bonds.length} active · +${pfMoney(bondsMaturity-bondsInvested)} at maturity`},
-    {label:'Stocks', val:stockInvested, color:'var(--c3)', icon:'trend', show:stockValue,
+    {key:'stocks', label:'Stocks', val:stockInvested, color:'var(--c3)', icon:'trend', show:stockValue,
       sub:`${stockHolding.length} active · ${rs(stockRealized,{sign:true})} realized`},
-    {label:'Mutual Funds', val:mfInvested, color:'var(--c4)', icon:'pie', show:mfValue,
+    {key:'mf', label:'Mutual Funds', val:mfInvested, color:'var(--c4)', icon:'pie', show:mfValue,
       sub:`${mfHolding.length} active · ${rs(mfRealized,{sign:true})} realized`},
   ];
   const share=v=>totalInvested?v/totalInvested*100:0;
@@ -1737,7 +1796,7 @@ function renderPortfolio(){
   </section>
 
   <div class="dash-grid g-4 tiles">
-    ${cats.map((c,i)=>`<div class="tile fade-up" style="--ic:${c.color};animation-delay:${i*60}ms">
+    ${cats.map((c,i)=>`<div class="tile fade-up" role="button" tabindex="0" aria-label="Show ${c.label} list" onclick="pfJump('${c.key}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pfJump('${c.key}')}" style="--ic:${c.color};animation-delay:${i*60}ms">
       ${icon(c.icon,c.color)}
       <div class="tile-l">${c.label}</div>
       <div class="tile-v">${cnt(c.show,'rs')}</div>
@@ -1751,7 +1810,7 @@ function renderPortfolio(){
     <div class="panel fade-up"><div class="panel-h"><h2>${icon('trend','var(--c3)',1)}${perfTitle}</h2></div>${perfBody}</div>
   </div>
 
-  <div class="panel flush fade-up"><div class="panel-h"><h2>${icon('bank','var(--c1)',1)}Fixed deposits</h2><span class="hint">${pfMoney(fdInvested)}</span></div>
+  <div class="panel flush fade-up" id="pf-fd" style="--ic:var(--c1)"><div class="panel-h"><h2>${icon('bank','var(--c1)',1)}Fixed deposits</h2><span class="hint">${pfMoney(fdInvested)}</span></div>
       ${fdSorted.length?`<div class="tbl-wrap"><table><thead><tr><th>Bank</th><th>Amount</th><th>Maturity</th><th>Rate</th><th>At maturity</th><th>Image</th></tr></thead><tbody>
       ${fdSorted.map(r=>`<tr>
         <td>${nameCell(r['INVESTMENTS'],'var(--c1)')}</td>
@@ -1759,7 +1818,7 @@ function renderPortfolio(){
         <td>${escHtml(niceDate(r['MATURE DATE']))}<div style="margin-top:4px">${dayPill(daysUntil(r['MATURE DATE']))}</div></td>
         <td class="num">${r['PERCENTAGE']||'—'}%</td><td class="num pos"><strong>${pfMoney(r['MATURE AMOUNT'])}</strong></td><td>${pfImgBtn(r)}</td></tr>`).join('')}
       </tbody></table></div>`:'<div class="empty-s">No FDs found.</div>'}</div>
-    <div class="panel flush fade-up"><div class="panel-h"><h2>${icon('doc','var(--c2)',1)}Bonds</h2><span class="hint">${pfMoney(bondsInvested)}</span></div>
+    <div class="panel flush fade-up" id="pf-bonds" style="--ic:var(--c2)"><div class="panel-h"><h2>${icon('doc','var(--c2)',1)}Bonds</h2><span class="hint">${pfMoney(bondsInvested)}</span></div>
       ${bondsSorted.length?`<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Amount</th><th>Maturity</th><th>Return</th><th>At maturity</th></tr></thead><tbody>
       ${bondsSorted.map(r=>`<tr>
         <td>${nameCell(r['Name'],'var(--c2)',escHtml(r['App']||''))}</td>
@@ -1768,11 +1827,20 @@ function renderPortfolio(){
         <td class="num">${r['Percentage of return']||'—'}%</td><td class="num pos"><strong>${pfMoney(r['Mature amount'])}</strong></td></tr>`).join('')}
       </tbody></table></div>`:'<div class="empty-s">No bonds found.</div>'}</div>
 
-  <div class="panel flush fade-up"><div class="panel-h"><h2>${icon('trend','var(--c3)',1)}Stocks</h2><button class="btn btn-outline btn-sm" id="pfStockToggle" onclick="toggleSoldStocks()">${showSoldStocks?'Hide sold':'Show sold'}</button></div>
+  <div class="panel flush fade-up" id="pf-stocks" style="--ic:var(--c3)"><div class="panel-h"><h2>${icon('trend','var(--c3)',1)}Stocks</h2><button class="btn btn-outline btn-sm" id="pfStockToggle" onclick="toggleSoldStocks()">${showSoldStocks?'Hide sold':'Show sold'}</button></div>
     ${holdingsTable(showSoldStocks?stock:stockHolding,'Stock','stock entries','var(--c3)')}</div>
-  <div class="panel flush fade-up"><div class="panel-h"><h2>${icon('pie','var(--c4)',1)}Mutual funds</h2><button class="btn btn-outline btn-sm" id="pfMFToggle" onclick="toggleSoldStocks()">${showSoldStocks?'Hide sold':'Show sold'}</button></div>
+  <div class="panel flush fade-up" id="pf-mf" style="--ic:var(--c4)"><div class="panel-h"><h2>${icon('pie','var(--c4)',1)}Mutual funds</h2><button class="btn btn-outline btn-sm" id="pfMFToggle" onclick="toggleSoldStocks()">${showSoldStocks?'Hide sold':'Show sold'}</button></div>
     ${holdingsTable(showSoldStocks?mf:mfHolding,'Fund','mutual fund entries','var(--c4)')}</div>`;
   countUp(root, anim);
+}
+
+// Category tiles jump to their list further down the page and flash it.
+function pfJump(key){
+  const el=document.getElementById('pf-'+key);
+  if(!el) return;
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
 }
 
 function holdingsTable(rows, nameLabel, noun, ic){
@@ -1916,6 +1984,98 @@ function renderHistory(){
   }).join('');
 }
 
+// ─── NO-TRADE DAYS ───────────────────────────────────────────
+// Sitting out is a decision worth journaling too. One entry per date lives in
+// tradeJournal/{uid}/noTrades/{YYYY-MM-DD}; the listener keeps every device in sync.
+const NT_REASONS=[
+  ['no-setup','No valid setup'],['choppy','Market choppy / unclear'],['waited','Waited, entry never came'],
+  ['news','News / event risk'],['limit','Hit my loss limit'],['headspace','Not in the right headspace'],
+  ['busy','Busy / away'],['off','Planned day off'],['other','Other'],
+];
+const NT_LABEL=Object.fromEntries(NT_REASONS);
+const CACHE_NT='tj_cache_notrades';
+let noTrades={}, unsubNoTrades=null;
+
+function noTradesCol(){ return userDoc().collection('noTrades'); }
+function setNoTrades(map){ noTrades=map||{}; renderNoTradeViews(); }
+function renderNoTradeViews(){ renderNoTradeNudge(); renderCalendar(); if(currentTab==='stats') renderStats(); }
+function subscribeNoTrades(){
+  if(unsubNoTrades) unsubNoTrades();
+  unsubNoTrades=noTradesCol().onSnapshot(snap=>{
+    const m={}; snap.docs.forEach(d=>{const x=d.data(); m[d.id]={reason:x.reason||'other', note:x.note||''};});
+    cacheSet(CACHE_NT,m); setNoTrades(m);
+  }, err=>console.warn('No-trade days unavailable', err));
+}
+
+const isTradingDay=iso=>{const [y,m,d]=iso.split('-').map(Number);const w=new Date(y,m-1,d).getDay();return w>0&&w<6&&!NSE_HOLIDAYS[iso];};
+
+// Banner on the New Trade tab: asks on a quiet trading day, shows today's answer once given.
+function renderNoTradeNudge(){
+  const el=document.getElementById('noTradeNudge');
+  if(!el) return;
+  const t=today(), e=noTrades[t], tradedToday=trades.some(x=>x.date===t);
+  if(e){
+    el.className='nt-bar logged';
+    el.innerHTML=`${icon('clock','var(--success)',1)}<div class="nt-txt"><b>Sat out today · ${escHtml(NT_LABEL[e.reason]||'Other')}</b>${e.note?`<span>${escHtml(e.note)}</span>`:''}</div>
+      <button class="btn btn-ghost btn-sm" onclick="openNoTrade('${t}')">Edit</button>`;
+  } else if(!tradedToday && isTradingDay(t)){
+    el.className='nt-bar ask';
+    el.innerHTML=`${icon('clock','var(--warn)',1)}<div class="nt-txt"><b>No trades logged today</b><span>Sitting out? Note why — it's part of the plan too.</span></div>
+      <button class="btn btn-primary btn-sm" onclick="openNoTrade('${t}')">Log why</button>`;
+  } else {
+    el.className='nt-bar quiet';
+    el.innerHTML=`<button class="btn btn-ghost btn-sm" onclick="openNoTrade()">＋ Log a no-trade day</button>`;
+  }
+}
+
+function openNoTrade(date){
+  const d=date||today(), e=noTrades[d];
+  document.getElementById('ntDate').value=d;
+  document.getElementById('ntDate').max=today();
+  document.getElementById('ntNote').value=e?.note||'';
+  document.querySelectorAll('input[name="ntReason"]').forEach(r=>r.checked=r.value===(e?.reason||''));
+  document.getElementById('ntDelete').hidden=!e;
+  ntDateChanged();
+  document.getElementById('noTradeModal').classList.add('on');
+}
+function closeNoTrade(){ document.getElementById('noTradeModal').classList.remove('on'); }
+// Picking a date that already has an entry loads it, so the dialog never silently overwrites.
+function ntDateChanged(){
+  const d=document.getElementById('ntDate').value, e=noTrades[d], n=trades.filter(x=>x.date===d).length;
+  if(e){ document.getElementById('ntNote').value=e.note; document.querySelectorAll('input[name="ntReason"]').forEach(r=>r.checked=r.value===e.reason); }
+  document.getElementById('ntDelete').hidden=!e;
+  document.getElementById('ntWarn').textContent=n?`You logged ${n} trade${n>1?'s':''} on this day.`:'';
+}
+async function saveNoTrade(ev){
+  ev.preventDefault();
+  const date=document.getElementById('ntDate').value;
+  const reason=document.querySelector('input[name="ntReason"]:checked')?.value;
+  const note=document.getElementById('ntNote').value.trim().slice(0,1000);
+  if(!date){ toast('Pick a date','err'); return; }
+  if(!reason){ toast('Pick a reason','err'); return; }
+  const prev=noTrades[date];
+  setNoTrades({...noTrades,[date]:{reason,note}});   // show it now; the listener confirms
+  closeNoTrade();
+  if(DEMO){ toast('Saved (demo — not stored)','ok'); return; }
+  try {
+    // Not awaited offline: Firestore queues the write and syncs later.
+    const w=noTradesCol().doc(date).set({date,reason,note,updatedAt:serverTs(),...(prev?{}:{createdAt:serverTs()})},{merge:true});
+    toast('No-trade day saved','ok');
+    await w;
+  } catch(err){
+    const m={...noTrades}; if(prev) m[date]=prev; else delete m[date]; setNoTrades(m);
+    toast('Could not save: '+err.message,'err');
+  }
+}
+async function deleteNoTrade(){
+  const date=document.getElementById('ntDate').value, prev=noTrades[date];
+  if(!prev) return;
+  const m={...noTrades}; delete m[date]; setNoTrades(m); closeNoTrade();
+  if(DEMO){ toast('Removed (demo)','ok'); return; }
+  try { toast('Removed','ok'); await noTradesCol().doc(date).delete(); }
+  catch(err){ setNoTrades({...noTrades,[date]:prev}); toast('Could not remove: '+err.message,'err'); }
+}
+
 // ─── STATS ───────────────────────────────────────────────────
 // ─── DASHBOARD HELPERS ───────────────────────────────────────
 const ICONS={
@@ -2007,7 +2167,9 @@ function donut(segs, size, stroke, center){
   let off=0;
   const arcs=segs.filter(s=>s.v>0).map(s=>{
     const len=Math.max(0,s.v/total*C-gap);
-    const a=`<circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${stroke}" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" stroke-linecap="butt" ${tipAttr(s.tip||'')} style="cursor:default"/>`;
+    // Arcs sweep in one after another, as one continuous stroke around the ring.
+    const a=`<circle class="arc" cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${stroke}" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" stroke-linecap="butt" ${tipAttr(s.tip||'')}
+      style="--len:${len.toFixed(2)};--c:${C.toFixed(2)};--sw:${stroke}px;animation-duration:${Math.max(120,len/C*900).toFixed(0)}ms;animation-delay:${(150+off/C*900).toFixed(0)}ms"/>`;
     off+=s.v/total*C; return a;});
   return `<div class="donut" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}">
     <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--card2)" stroke-width="${stroke}"/>${arcs.join('')}</svg>
@@ -2172,6 +2334,8 @@ function renderStats(){
     ${dayCols.length?vBars(dayCols,{cls:'daily',showVal:false})+`<div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--sec);margin-top:6px"><span>${niceDate(dayKeys[0])}</span><span>${niceDate(dayKeys[dayKeys.length-1])}</span></div>`:'<div class="empty-s">No closed trades in this range.</div>'}
   </div>
 
+  ${sitOutPanel(cutoff)}
+
   <div class="dash-grid g-2">
     <div class="panel fade-up"><div class="panel-h"><h2>${icon('tag','var(--c1)',1)}By symbol</h2></div>${hBars(toRows(sym))}</div>
     <div class="dash">
@@ -2183,6 +2347,21 @@ function renderStats(){
   <div class="panel fade-up"><div class="panel-h"><h2>${icon('calendar','var(--c2)',1)}Monthly returns</h2><span class="hint">darker = bigger month</span></div>${heat}</div>`;
   equityChart(document.getElementById('equityChart'), closed);
   countUp(root, anim);
+}
+
+// Stats: why you sat out, in the same date range as the rest of the page.
+function sitOutPanel(cutoff){
+  const list=Object.entries(noTrades).filter(([d])=>!cutoff||d>=cutoff).sort((a,b)=>b[0].localeCompare(a[0]));
+  const head=`<div class="panel-h"><h2>${icon('clock','var(--c4)',1)}Days you sat out</h2><button class="btn btn-outline btn-sm" onclick="openNoTrade()">＋ Log a day</button></div>`;
+  if(!list.length) return `<div class="panel fade-up">${head}<div class="empty-s">No no-trade days logged in this range. When you skip a trading day, log why from the New Trade tab or by tapping the day on the Calendar.</div></div>`;
+  const cnt={}; list.forEach(([,e])=>cnt[e.reason]=(cnt[e.reason]||0)+1);
+  const rows=NT_REASONS.filter(([k])=>cnt[k]).sort((a,b)=>cnt[b[0]]-cnt[a[0]])
+    .map(([k,l])=>({name:l,v:cnt[k],color:'var(--c4)',tip:`<b>${l}</b><br>${cnt[k]} day${cnt[k]>1?'s':''} · ${(cnt[k]/list.length*100).toFixed(0)}%`}));
+  const recent=list.slice(0,6).map(([d,e])=>`<div class="nt-item" onclick="openNoTrade('${d}')"><div class="tl-d"><b>${+d.slice(8)}</b><span>${MON[+d.slice(5,7)-1]}</span></div>
+    <div style="min-width:0"><div class="tl-n">${escHtml(NT_LABEL[e.reason]||'Other')}</div><div class="tl-s">${e.note?escHtml(e.note):'<span style="color:var(--muted)">No note</span>'}</div></div></div>`).join('');
+  return `<div class="panel fade-up">${head}<div class="dash-grid g-2" style="gap:24px">
+    <div><div class="big">${list.length}</div><div class="muted-s" style="margin-bottom:12px">day${list.length>1?'s':''} sat out, by reason</div><div class="wide-names">${hBars(rows,v=>v+' day'+(v>1?'s':''))}</div></div>
+    <div><div class="muted-s" style="margin-bottom:6px">Most recent</div><div class="tl">${recent}</div></div></div></div>`;
 }
 
 function equityChart(el, closed){
@@ -2254,6 +2433,9 @@ function startDemo(){
   }
   rows.push([`${shift(0)}T10:05#o1`,shift(0),'10:05','','','INFY','Stocks','Long',1540,'',20,'','','','','Breakout','','','4','','']);
   setTrades(rows);
+  // a few sat-out days on recent trading days without trades
+  const traded=new Set(rows.map(r=>r[1])); let k=0;
+  for(let i=1;i<60&&k<9;i++){const dd=shift(-i);if(!traded.has(dd)&&isTradingDay(dd)){noTrades[dd]={reason:['no-setup','choppy','waited','news','no-setup','busy','headspace','choppy','no-setup'][k],note:['Nifty stuck in a 40-pt range all morning','','ORB triggered then reversed, stayed out','RBI policy day','','Travelling','Two losses yesterday, took a break','',''][k]};k++;}}
   portfolio={
     fd:[
       {INVESTMENTS:'SBI',AMOUNT:200000,'MATURE DATE':shift(18),PERCENTAGE:7.1,'RETURN AMOUNT':14200,'MATURE AMOUNT':214200},
@@ -2360,6 +2542,7 @@ function renderCalendar(){
   document.getElementById('calLegend').innerHTML = `
     <span><span class="dot" style="background:var(--warn)"></span>NSE/BSE Holiday</span>
     <span><span class="dot" style="background:#3b82f6"></span>Weekend</span>
+    <span><span class="dot" style="background:var(--muted)"></span>No trade (reason logged) — tap an empty day to add one</span>
   `;
 
   const todayStr = today();
@@ -2377,12 +2560,15 @@ function renderCalendar(){
     const dow = (firstDow + d - 1) % 7;
     const isWeekend = dow===0 || dow===6;
     const holidayName = NSE_HOLIDAYS[dateStr];
-    const onclick = data ? ` onclick="viewDayInHistory('${dateStr}')"` : '';
-    const title = holidayName ? ` title="${escHtml(holidayName)}"` : '';
-    html += `<div class="cal-cell${pnlCls}${isToday?' today':''}${data?' has-t':''}${isWeekend?' weekend':''}${holidayName?' holiday':''}"${onclick}${title}>
+    const nt = !data && noTrades[dateStr];
+    const canLog = !data && !holidayName && !isWeekend && dateStr<=todayStr;
+    const onclick = data ? ` onclick="viewDayInHistory('${dateStr}')"` : (nt||canLog) ? ` onclick="openNoTrade('${dateStr}')"` : '';
+    const title = nt ? ` ${tipAttr(`<b>No trade · ${escHtml(NT_LABEL[nt.reason]||'Other')}</b>${nt.note?'<br>'+escHtml(nt.note):''}`)}`
+      : holidayName ? ` title="${escHtml(holidayName)}"` : canLog ? ` title="Log why you didn't trade"` : '';
+    html += `<div class="cal-cell${pnlCls}${isToday?' today':''}${data?' has-t':''}${nt?' skip':''}${canLog&&!nt?' can-log':''}${isWeekend?' weekend':''}${holidayName?' holiday':''}"${onclick}${title}>
       <div class="cal-num">${d}</div>
       ${data?`<div class="cal-pnl ${data.pnl>=0?'pos':'neg'}">${data.pnl>=0?'+':''}${data.pnl.toFixed(0)}</div>
-      <div class="cal-cnt">${data.count} trade${data.count>1?'s':''}</div>`:''}
+      <div class="cal-cnt">${data.count} trade${data.count>1?'s':''}</div>`:nt?`<div class="cal-skip">No trade</div><div class="cal-cnt">${escHtml(NT_LABEL[nt.reason]||'Other')}</div>`:''}
     </div>`;
   }
   document.getElementById('calGrid').innerHTML = html;

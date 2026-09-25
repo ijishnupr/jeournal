@@ -97,6 +97,19 @@ service cloud.firestore {
           && request.resource.data.mistakes.size() <= 5000;
       }
 
+      // Days the user chose not to trade, one doc per date (id = YYYY-MM-DD).
+      match /noTrades/{date} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && request.resource.data.keys().hasOnly(['date', 'reason', 'note', 'createdAt', 'updatedAt'])
+          && request.resource.data.date == date
+          && request.resource.data.reason in ['no-setup', 'choppy', 'waited', 'news', 'limit',
+                                               'headspace', 'busy', 'off', 'other']
+          && request.resource.data.note is string
+          && request.resource.data.note.size() <= 1000;
+      }
+
       // Mirror of the FD / bonds / stock sheets (incl. Drive image ids), written
       // by the app after each sheet refresh so other devices can read it.
       match /portfolio/{docId} {
