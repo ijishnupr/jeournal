@@ -1,4 +1,4 @@
-const CACHE = 'tj-v18';
+const CACHE = 'tj-v19';
 const SHELL = ['./', './index.html', './manifest.json', './icon.svg'];
 // Keep in sync with the <script> tags in index.html. config.js is generated at
 // deploy time, so it's best-effort too (it may not exist in a local checkout).

@@ -263,13 +263,6 @@ tr:hover td{background:var(--row-hover)}
 .empty svg{width:54px;height:54px;margin-bottom:14px;opacity:.5}
 .empty p{font-size:.9rem}
 
-/* ── DOW CHART ── */
-.dow-wrap{display:flex;gap:6px;align-items:flex-end;height:110px;padding:0 4px}
-.dow-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;justify-content:flex-end}
-.dow-bar{width:100%;border-radius:4px 4px 0 0;min-height:5px;opacity:.9;transition:opacity .2s ease}
-.dow-col:hover .dow-bar{opacity:1}
-.dow-lbl{font-size:.7rem;color:var(--sec);font-weight:500}
-.dow-val{font-size:.7rem;font-weight:500}
 /* ── TWO-COL GRID ── */
 .two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:16px}
 /* ── CALENDAR ── */
@@ -295,10 +288,6 @@ tr:hover td{background:var(--row-hover)}
 .cal-legend span{display:inline-flex;align-items:center;gap:5px}
 .cal-legend .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 
-/* ── PORTFOLIO ── */
-.pf-bar{display:flex;width:100%;height:12px;border-radius:6px;overflow:hidden;background:var(--card2);gap:2px}
-.pf-bar div{transition:width .4s ease}
-
 .hidden{display:none!important}
 @media(max-width:768px){
   .content{padding:16px}
@@ -321,6 +310,185 @@ tr:hover td{background:var(--row-hover)}
   .cal-pnl{font-size:.68rem;margin-top:2px}
   .cal-cnt{font-size:.56rem;margin-top:1px}
 }
+
+/* ── DASHBOARDS (Stats & Portfolio) ── */
+:root{--on-strong:#fff;--c1:#1a73e8;--c2:#129eaf;--c3:#9334e6;--c4:#e8710a;
+  --hero-bg:linear-gradient(135deg,#e8f0fe 0%,#f3f8ff 45%,#ffffff 100%)}
+[data-dark]{--on-strong:#000;--c1:#4285f4;--c2:#0f9d8a;--c3:#a66cf2;--c4:#d9690b;
+  --hero-bg:linear-gradient(135deg,rgba(66,133,244,.18) 0%,rgba(66,133,244,.05) 45%,#000 100%)}
+.dash{display:flex;flex-direction:column;gap:16px}
+.dash-grid{display:grid;gap:16px}
+.g-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:1000px){.g-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.g-2{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:480px){.g-4{grid-template-columns:minmax(0,1fr)}.g-4.tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.tiles .tile{padding:14px}.tiles .tile-v{font-size:1.15rem}.tiles .tile-s{display:none}}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;min-width:0;position:relative}
+.panel-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.panel-h h2{font-size:1rem;font-weight:500;display:flex;align-items:center;gap:10px}
+.panel-h .hint{font-size:.78rem;color:var(--muted)}
+.panel.flush{padding:0;overflow:hidden}
+.panel.flush .panel-h{padding:18px 20px 0}
+.ico{width:36px;height:36px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+  background:color-mix(in srgb,var(--ic,var(--primary)) 14%,transparent);color:var(--ic,var(--primary))}
+.ico svg{width:20px;height:20px}
+.ico.sm{width:28px;height:28px;border-radius:9px}.ico.sm svg{width:16px;height:16px}
+
+/* hero */
+.hero{background:var(--hero-bg);border:1px solid var(--border);border-radius:24px;padding:24px 24px 12px;overflow:hidden}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.eyebrow{font-size:.85rem;color:var(--sec);font-weight:500}
+.hero-num{font-family:'Google Sans',Roboto,sans-serif;font-size:clamp(2.1rem,6vw,3.2rem);font-weight:400;line-height:1.1;margin:4px 0 10px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:14px;font-size:.78rem;font-weight:500;
+  background:var(--card);border:1px solid var(--border);color:var(--sec);white-space:nowrap}
+.chip.up{background:var(--badge-long-bg);color:var(--badge-long-fg);border-color:transparent}
+.chip.down{background:var(--badge-short-bg);color:var(--badge-short-fg);border-color:transparent}
+.seg{display:inline-flex;border:1px solid var(--border2);border-radius:18px;overflow:hidden;background:var(--card)}
+.seg button{height:34px;padding:0 14px;border:none;background:transparent;color:var(--sec);font:500 .8rem 'Google Sans',Roboto,sans-serif;cursor:pointer;border-right:1px solid var(--border2)}
+.seg button:last-child{border-right:none}
+.seg button:hover{background:var(--row-hover)}
+.seg button.on{background:var(--tonal);color:var(--tonal-fg)}
+.kpis{display:flex;flex-wrap:wrap;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin:18px 0 8px}
+.kpi{background:var(--card);padding:12px 16px;flex:1 1 120px}
+.kpi b{display:block;font:400 1.15rem 'Google Sans',Roboto,sans-serif;font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap}
+.kpi>span{font-size:.75rem;color:var(--sec)}
+.chart-box{position:relative;margin:0 -8px}
+.chart-box svg{display:block;width:100%;overflow:visible}
+.chart-box text{font-family:'Google Sans Text',Roboto,sans-serif}
+.draw{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.1s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.fade-up{animation:fadeUp .6s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.xhair{pointer-events:none;opacity:0;transition:opacity .12s}
+.chart-box:hover .xhair,.chart-box.touch .xhair{opacity:1}
+
+/* tooltip */
+.ctip{position:fixed;z-index:3000;pointer-events:none;background:#303134;color:#e8eaed;border-radius:8px;padding:8px 12px;font-size:.78rem;line-height:1.45;
+  box-shadow:0 2px 6px rgba(0,0,0,.3);opacity:0;transform:translateY(4px);transition:opacity .12s,transform .12s;max-width:240px}
+[data-dark] .ctip{background:#e8eaed;color:#202124}
+.ctip.on{opacity:1;transform:none}
+.ctip b{font-weight:500}.ctip .t{color:#9aa0a6;font-size:.72rem}
+[data-dark] .ctip .t{color:#5f6368}
+
+/* donut */
+.donut-wrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.donut{position:relative;flex-shrink:0}
+.donut svg{display:block;transform:rotate(-90deg)}
+.donut svg circle{transition:stroke-dasharray .9s cubic-bezier(.4,0,.2,1)}
+.donut-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.donut-c b{font:400 1.6rem 'Google Sans',Roboto,sans-serif;line-height:1}
+.donut-c span{font-size:.72rem;color:var(--sec);margin-top:4px}
+.legend{display:flex;flex-direction:column;gap:10px;flex:1;min-width:150px}
+.lg-row{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:center;font-size:.85rem}
+.lg-row i{width:10px;height:10px;border-radius:3px}
+.lg-row em{font-style:normal;color:var(--sec);font-variant-numeric:tabular-nums}
+.lg-bar{grid-column:2/4;height:4px;border-radius:2px;background:var(--card2);overflow:hidden;margin-top:-4px}
+.lg-bar div{height:100%;border-radius:2px;transform-origin:left;animation:growX .9s cubic-bezier(.4,0,.2,1) both}
+
+/* horizontal diverging bars */
+.hbars{display:flex;flex-direction:column;gap:4px}
+.hb{display:grid;grid-template-columns:minmax(70px,120px) 1fr 84px;gap:12px;align-items:center;padding:6px 8px;border-radius:8px;cursor:default}
+.hb:hover{background:var(--row-hover)}
+.hb-n{font-size:.85rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb-n small{display:block;font-size:.7rem;color:var(--muted);font-weight:400}
+.hb-t{position:relative;height:22px}
+.hb-t::before{content:'';position:absolute;left:var(--z,50%);top:-4px;bottom:-4px;width:1px;background:var(--border2)}
+.hb-f{position:absolute;top:3px;height:16px;transform-origin:left;animation:growX .8s cubic-bezier(.4,0,.2,1) both}
+.hb-f.p{left:var(--z,50%);border-radius:0 4px 4px 0;background:var(--success)}
+.hb-f.n{right:calc(100% - var(--z,50%));border-radius:4px 0 0 4px;background:var(--danger);transform-origin:right}
+.hb-v{text-align:right;font-size:.82rem;font-weight:500;font-variant-numeric:tabular-nums}
+@keyframes growX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes growY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+
+/* vertical diverging bars (day of week / daily) */
+.vbars{display:flex;align-items:stretch;gap:6px;height:180px}
+.vb{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0;cursor:default}
+.vb-plot{flex:1;width:100%;position:relative;border-radius:6px}
+.vb:hover .vb-plot{background:var(--row-hover)}
+.vb-plot::after{content:'';position:absolute;left:0;right:0;top:var(--z,50%);height:1px;background:var(--border2)}
+.vb-f{position:absolute;left:18%;right:18%;animation:growY .7s cubic-bezier(.4,0,.2,1) both}
+.vb-f.p{bottom:calc(100% - var(--z,50%));border-radius:4px 4px 0 0;background:var(--success);transform-origin:bottom}
+.vb-f.n{top:var(--z,50%);border-radius:0 0 4px 4px;background:var(--danger);transform-origin:top}
+.vb-l{font-size:.72rem;color:var(--sec);margin-top:6px;font-weight:500}
+.vb-v{font-size:.7rem;font-weight:500;height:16px;font-variant-numeric:tabular-nums}
+.daily .vb-f{left:1px;right:1px}
+.daily{gap:2px}
+
+/* heatmap */
+.heat{display:grid;grid-template-columns:44px repeat(12,minmax(0,1fr)) 72px;gap:4px;align-items:center;font-size:.72rem}
+.heat .hd{color:var(--sec);text-align:center;font-weight:500}
+.heat .yr{color:var(--sec);font-weight:500}
+.heat .cell{height:40px;border-radius:6px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-weight:500;font-variant-numeric:tabular-nums;cursor:default;transition:transform .15s}
+.heat .cell:hover{transform:scale(1.08);box-shadow:var(--shadow-md)}
+.heat .tot{text-align:right;font-weight:500;font-variant-numeric:tabular-nums}
+.heat-scroll{overflow-x:auto}
+.heat-scroll .heat{min-width:600px}
+
+/* form guide */
+.form-row{display:flex;gap:4px;flex-wrap:wrap}
+.form-row i{width:14px;height:22px;border-radius:4px;display:block;cursor:default;animation:fadeUp .4s ease both}
+.form-row i.w{background:var(--success)}.form-row i.l{background:var(--danger)}.form-row i.e{background:var(--border2)}
+.big{font:400 2rem 'Google Sans',Roboto,sans-serif;line-height:1.1;font-variant-numeric:tabular-nums}
+.muted-s{font-size:.78rem;color:var(--sec)}
+.cmp{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.cmp-r{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;font-size:.8rem}
+.cmp-t{height:10px;border-radius:5px;background:var(--card2);overflow:hidden}
+.cmp-t div{height:100%;border-radius:5px;transform-origin:left;animation:growX .8s cubic-bezier(.4,0,.2,1) both}
+.split{display:flex;height:10px;border-radius:5px;overflow:hidden;gap:2px;margin:10px 0 12px}
+.split div{transform-origin:left;animation:growX .8s cubic-bezier(.4,0,.2,1) both}
+
+/* portfolio tiles */
+.tile{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:6px;transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden;min-width:0}
+.tile:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.tile::after{content:'';position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:var(--ic);opacity:.07}
+.tile-l{font-size:.82rem;color:var(--sec);font-weight:500;margin-top:8px}
+.tile-v{font:400 1.5rem 'Google Sans',Roboto,sans-serif;font-variant-numeric:tabular-nums}
+.tile-s{font-size:.75rem;color:var(--muted)}
+.tile-bar{height:4px;border-radius:2px;background:var(--card2);margin-top:6px;overflow:hidden}
+.tile-bar div{height:100%;background:var(--ic);border-radius:2px;transform-origin:left;animation:growX .9s cubic-bezier(.4,0,.2,1) both}
+
+/* maturity timeline */
+.tl{display:flex;flex-direction:column}
+.tl-i{display:grid;grid-template-columns:52px 1fr auto;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.tl-i:last-child{border-bottom:none}
+.tl-d{width:52px;height:52px;border-radius:14px;background:var(--card2);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.tl-d b{font:500 1.15rem 'Google Sans',Roboto,sans-serif}
+.tl-d span{font-size:.62rem;color:var(--sec);text-transform:uppercase;font-weight:500}
+.tl-n{font-weight:500;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl-s{font-size:.76rem;color:var(--sec);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tl-s i{width:8px;height:8px;border-radius:2px;display:inline-block}
+.tl-p{height:4px;border-radius:2px;background:var(--card2);margin-top:6px;overflow:hidden}
+.tl-p div{height:100%;border-radius:2px;background:var(--ic);transform-origin:left;animation:growX .9s cubic-bezier(.4,0,.2,1) both}
+.pill{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:13px;font-size:.75rem;font-weight:500;background:var(--card2);color:var(--sec);white-space:nowrap}
+.pill.soon{background:#fef7e0;color:#b06000}
+[data-dark] .pill.soon{background:rgba(253,214,99,.14);color:var(--warn)}
+.pill.done{background:var(--badge-long-bg);color:var(--badge-long-fg)}
+
+/* nicer tables inside panels */
+.avatar{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font:500 .8rem 'Google Sans',Roboto,sans-serif;flex-shrink:0;
+  background:color-mix(in srgb,var(--ic,var(--primary)) 16%,transparent);color:var(--ic,var(--primary))}
+.namecell{display:flex;align-items:center;gap:12px}
+.panel.flush table{min-width:640px}
+.panel.flush .tbl-wrap{margin-top:12px}
+.num{font-variant-numeric:tabular-nums}
+.empty-s{color:var(--muted);text-align:center;padding:28px 12px;font-size:.88rem}
+.demo-bar{background:var(--tonal);color:var(--tonal-fg);font-size:.82rem;font-weight:500;text-align:center;padding:8px 16px}
+@media(max-width:600px){
+  .hero{padding:18px 16px 8px;border-radius:20px}
+  .panel{padding:16px}
+  .hb{grid-template-columns:minmax(60px,90px) 1fr 72px;gap:8px;padding:6px 4px}
+  .vbars{height:150px}
+}
+@media(prefers-reduced-motion:reduce){
+  .draw,.fade-up,.hb-f,.vb-f,.lg-bar div,.tile-bar div,.tl-p div,.cmp-t div,.split div,.form-row i{animation:none;stroke-dashoffset:0}
+  .donut svg circle{transition:none}
+}
+
+.hero-split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:24px;align-items:center}
+@media(max-width:820px){.hero-split{grid-template-columns:minmax(0,1fr)}}
+.still *,.still *::before,.still *::after{animation:none!important}
+.still .draw{stroke-dashoffset:0}
 </style>
 
 </head>
@@ -589,48 +757,7 @@ tr:hover td{background:var(--row-hover)}
     </div>
 
     <!-- STATS -->
-    <div id="tab-stats" class="tab-content">
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-label">Total Trades</div><div class="stat-val" id="sTot">—</div></div>
-        <div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-val" id="sWR">—</div></div>
-        <div class="stat-card"><div class="stat-label">Total P&amp;L</div><div class="stat-val" id="sPnl">—</div></div>
-        <div class="stat-card"><div class="stat-label">Avg Win</div><div class="stat-val pos" id="sAW">—</div></div>
-        <div class="stat-card"><div class="stat-label">Avg Loss</div><div class="stat-val neg" id="sAL">—</div></div>
-        <div class="stat-card"><div class="stat-label">Profit Factor</div><div class="stat-val" id="sPF">—</div></div>
-        <div class="stat-card"><div class="stat-label">Best Trade</div><div class="stat-val pos" id="sBest">—</div></div>
-        <div class="stat-card"><div class="stat-label">Worst Trade</div><div class="stat-val neg" id="sWorst">—</div></div>
-        <div class="stat-card"><div class="stat-label">Current Streak</div><div class="stat-val" id="sStreak">—</div><div class="stat-sub" id="sStreakSub"></div></div>
-        <div class="stat-card"><div class="stat-label">Max Drawdown</div><div class="stat-val neg" id="sDD">—</div></div>
-      </div>
-
-      <!-- Equity Curve -->
-      <div class="card" style="margin-bottom:14px">
-        <div class="card-header"><h2>Equity Curve</h2></div>
-        <div class="card-body" id="equityChart" style="padding:12px 8px"></div>
-      </div>
-
-      <div class="two-col">
-        <div class="card">
-          <div class="card-header"><h2>By Market</h2></div>
-          <div class="card-body" id="mktStats" style="padding:0 0 8px"></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><h2>By Symbol</h2></div>
-          <div class="card-body" id="symStats" style="padding:0 0 8px"></div>
-        </div>
-      </div>
-
-      <div class="two-col">
-        <div class="card">
-          <div class="card-header"><h2>Day of Week</h2></div>
-          <div class="card-body" id="dowStats"></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><h2>Monthly Breakdown</h2></div>
-          <div class="card-body" id="monthStats" style="padding:0 0 8px"></div>
-        </div>
-      </div>
-    </div>
+    <div id="tab-stats" class="tab-content"><div class="dash" id="statsRoot"></div></div>
 
     <!-- CALENDAR -->
     <div id="tab-calendar" class="tab-content">
@@ -651,37 +778,7 @@ tr:hover td{background:var(--row-hover)}
     </div>
 
     <!-- PORTFOLIO -->
-    <div id="tab-portfolio" class="tab-content">
-      <div class="stats-grid" id="pfSummary"></div>
-
-      <div class="card" style="margin-bottom:14px">
-        <div class="card-header"><h2>Allocation</h2>
-          <button class="btn btn-outline btn-sm" onclick="loadPortfolio({force:true})">↻ Refresh</button>
-        </div>
-        <div class="card-body" id="pfAllocation"></div>
-      </div>
-
-      <div class="two-col">
-        <div class="card">
-          <div class="card-header"><h2>Fixed Deposits</h2></div>
-          <div class="card-body" id="pfFD" style="padding:0 0 8px"></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><h2>Bonds</h2></div>
-          <div class="card-body" id="pfBonds" style="padding:0 0 8px"></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header"><h2>Stocks</h2><button class="btn btn-outline btn-sm" id="pfStockToggle" onclick="toggleSoldStocks()">Show sold</button></div>
-        <div class="card-body" id="pfStock" style="padding:0 0 8px"></div>
-      </div>
-
-      <div class="card" style="margin-top:14px">
-        <div class="card-header"><h2>Mutual Funds</h2><button class="btn btn-outline btn-sm" id="pfMFToggle" onclick="toggleSoldStocks()">Show sold</button></div>
-        <div class="card-body" id="pfMF" style="padding:0 0 8px"></div>
-      </div>
-    </div>
+    <div id="tab-portfolio" class="tab-content"><div class="dash" id="pfRoot"></div></div>
 
   </div>
 </div>
@@ -734,6 +831,7 @@ const HEADERS = ['Timestamp','Date','Entry Time','Exit Time','Time Taken',
 // Set by config.js, which the deploy workflow generates from the repository
 // variables (locally: copy config.example.js to config.js).
 const FIREBASE_CONFIG = window.FIREBASE_CONFIG || {};
+const DEMO = new URLSearchParams(location.search).has('demo');
 // Own top-level collection — never touches the other app's users/{uid} tree.
 const TJ_COLLECTION = 'tradeJournal';
 // Firestore field names, in the same order as HEADERS / sheet columns.
@@ -743,7 +841,7 @@ const TRADE_FIELDS = ['ts','date','entryTime','exitTime','timeTaken',
   'strategy','notes','mistakes','rating','imageUrl','driveFileId'];
 
 let fbAuth = null, db = null, currentUser = null, unsubTrades = null, tradesLive = false;
-if (FIREBASE_CONFIG.apiKey && window.firebase) {
+if (!DEMO && FIREBASE_CONFIG.apiKey && window.firebase) {
   firebase.initializeApp(FIREBASE_CONFIG);
   fbAuth = firebase.auth();
   db = firebase.firestore();
@@ -751,7 +849,7 @@ if (FIREBASE_CONFIG.apiKey && window.firebase) {
   db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
 }
 const serverTs = () => firebase.firestore.FieldValue.serverTimestamp();
-function userDoc(){ return db.collection(TJ_COLLECTION).doc(currentUser.uid); }
+function userDoc(){ if (DEMO) throw new Error('demo mode — nothing is saved'); return db.collection(TJ_COLLECTION).doc(currentUser.uid); }
 function tradesCol(){ return userDoc().collection('trades'); }
 // Timestamp doubles as the doc id, so importing the same sheet twice never duplicates.
 function tradeDocId(ts){ return String(ts).replace(/\//g, '_'); }
@@ -780,7 +878,8 @@ window.addEventListener('load', () => {
   applyTheme(localStorage.getItem('tj_dark') === '1');
   document.getElementById('fDate').value = today();
   document.getElementById('urlInput').value = GAS_URL;
-  if (fbAuth) fbAuth.onAuthStateChanged(onAuthChange);
+  if (DEMO){ GAS_URL = ''; startDemo(); }
+  else if (fbAuth) fbAuth.onAuthStateChanged(onAuthChange);
   else {
     showLogin();
     document.getElementById('googleBtn').disabled = true;
@@ -985,9 +1084,9 @@ function goTab(name, dir){
     el.addEventListener('animationend', ()=>el.classList.remove(cls), {once:true});
   }
   if (name==='history') renderHistory();
-  if (name==='stats') renderStats();
+  if (name==='stats'){ statsAnimNext=true; renderStats(); }
   if (name==='calendar') renderCalendar();
-  if (name==='portfolio'){ renderPortfolio(); loadPortfolio(); }
+  if (name==='portfolio'){ pfAnimNext=true; renderPortfolio(); loadPortfolio(); }
   paintSync();
 }
 
@@ -1505,7 +1604,23 @@ async function openPfImage(id){
   finally { doneLoading(); }
 }
 
+let pfAnimNext=false;
+function parseYMD(s){const [y,m,d]=String(s||'').split(/[-\/]/).map(Number);return y&&m&&d?new Date(y,m-1,d):null;}
+function untilLabel(days){
+  if(days===null) return ['—',''];
+  if(days<0) return ['Matured','done'];
+  if(days===0) return ['Today','soon'];
+  if(days<=30) return [`in ${days} day${days>1?'s':''}`,'soon'];
+  if(days<365) return [`in ${Math.round(days/30.4)} mo`,''];
+  return [`in ${(days/365).toFixed(1)} yr`,''];
+}
+const initials=s=>String(s||'?').replace(/[^A-Za-z0-9 ]/g,' ').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'?';
+const nameCell=(name,ic,sub='')=>`<div class="namecell"><span class="avatar" style="--ic:${ic}">${escHtml(initials(name))}</span><div><strong>${escHtml(name)}</strong>${sub?`<div class="stat-sub">${sub}</div>`:''}</div></div>`;
+
 function renderPortfolio(){
+  const root=document.getElementById('pfRoot');
+  if(!root) return;
+  const anim=pfAnimNext; pfAnimNext=false;
   const fd=portfolio.fd, bonds=portfolio.bonds;
   // The stock sheet also carries mutual funds, marked by the name "Mutual-fund".
   const isMF=r=>String(r['Stock']||'').trim().toLowerCase().replace(/[\s_]+/g,'-')==='mutual-fund';
@@ -1526,70 +1641,151 @@ function renderPortfolio(){
   const mfInvested=mfHolding.reduce((s,r)=>s+(+r['Invested amount']||0),0);
   const mfRealized=mf.filter(isSold).reduce((s,r)=>s+(+r['Profit']||0),0);
   const mfValue=mfInvested+mfRealized;
-
   const totalInvested=fdInvested+bondsInvested+stockInvested+mfInvested;
+  const fixedGain=(fdMaturity-fdInvested)+(bondsMaturity-bondsInvested);
+  const realized=stockRealized+mfRealized;
+  const holdings=fd.length+bonds.length+stockHolding.length+mfHolding.length;
 
-  document.getElementById('pfSummary').innerHTML=`
-    <div class="stat-card"><div class="stat-label">Total Invested</div><div class="stat-val">${pfMoney(totalInvested)}</div></div>
-    <div class="stat-card"><div class="stat-label">Fixed Deposits</div><div class="stat-val">${pfMoney(fdInvested)}</div><div class="stat-sub">${fd.length} active · +${pfMoney(fdMaturity-fdInvested)} return</div></div>
-    <div class="stat-card"><div class="stat-label">Bonds</div><div class="stat-val">${pfMoney(bondsInvested)}</div><div class="stat-sub">${bonds.length} active · +${pfMoney(bondsMaturity-bondsInvested)} return</div></div>
-    <div class="stat-card"><div class="stat-label">Stock Holdings</div><div class="stat-val">${pfMoney(stockValue)}</div><div class="stat-sub">${stockHolding.length} active · ${stockRealized>=0?'+':''}${pfMoney(stockRealized)} realized</div></div>
-    <div class="stat-card"><div class="stat-label">Mutual Funds</div><div class="stat-val">${pfMoney(mfValue)}</div><div class="stat-sub">${mfHolding.length} active · ${mfRealized>=0?'+':''}${pfMoney(mfRealized)} realized</div></div>
-  `;
-
-  // Allocation bar — categorical, fixed hue order, always direct-labeled (never color-alone)
+  // Categorical slots in fixed order — colour follows the asset class, never its rank.
   const cats=[
-    {label:'Fixed Deposits', val:fdInvested, color:'#1a73e8'},
-    {label:'Bonds', val:bondsInvested, color:'#12b5cb'},
-    {label:'Stocks', val:stockInvested, color:'#9334e6'},
-    {label:'Mutual Funds', val:mfInvested, color:'#e8710a'},
-  ].filter(c=>c.val>0);
-  const total=cats.reduce((s,c)=>s+c.val,0);
-  if(!total){
-    document.getElementById('pfAllocation').innerHTML='<p style="color:var(--muted);text-align:center;padding:20px">No portfolio data yet.</p>';
-  } else {
-    const segs=cats.map(c=>`<div style="width:${(c.val/total*100).toFixed(1)}%;background:${c.color}" title="${c.label}: ${pfMoney(c.val)}"></div>`).join('');
-    const legend=cats.map(c=>`<span><span class="dot" style="background:${c.color}"></span>${c.label} — ${pfMoney(c.val)} (${(c.val/total*100).toFixed(0)}%)</span>`).join('');
-    document.getElementById('pfAllocation').innerHTML=`
-      <div class="pf-bar">${segs}</div>
-      <div class="cal-legend" style="margin:12px 0 0">${legend}</div>
-    `;
+    {label:'Fixed Deposits', val:fdInvested, color:'var(--c1)', icon:'bank', show:fdInvested,
+      sub:`${fd.length} active · +${pfMoney(fdMaturity-fdInvested)} at maturity`},
+    {label:'Bonds', val:bondsInvested, color:'var(--c2)', icon:'doc', show:bondsInvested,
+      sub:`${bonds.length} active · +${pfMoney(bondsMaturity-bondsInvested)} at maturity`},
+    {label:'Stocks', val:stockInvested, color:'var(--c3)', icon:'trend', show:stockValue,
+      sub:`${stockHolding.length} active · ${rs(stockRealized,{sign:true})} realized`},
+    {label:'Mutual Funds', val:mfInvested, color:'var(--c4)', icon:'pie', show:mfValue,
+      sub:`${mfHolding.length} active · ${rs(mfRealized,{sign:true})} realized`},
+  ];
+  const share=v=>totalInvested?v/totalInvested*100:0;
+
+  // Weighted FD rate and the next maturity
+  const fdRate=fdInvested?fd.reduce((s,r)=>s+(+r['AMOUNT']||0)*(+r['PERCENTAGE']||0),0)/fdInvested:0;
+  const bondRate=bondsInvested?bonds.reduce((s,r)=>s+(+r['Amount invested']||0)*(+r['Percentage of return']||0),0)/bondsInvested:0;
+  const upcoming=[
+    ...fd.map(r=>({name:r['INVESTMENTS'],kind:'FD',color:'var(--c1)',date:r['MATURE DATE'],amt:+r['AMOUNT']||0,mat:+r['MATURE AMOUNT']||0,rate:r['PERCENTAGE'],start:null})),
+    ...bonds.map(r=>({name:r['Name'],kind:'Bond'+(r['App']?' · '+r['App']:''),color:'var(--c2)',date:r['Mature Date'],amt:+r['Amount invested']||0,mat:+r['Mature amount']||0,rate:r['Percentage of return'],start:r['Invested Date']})),
+  ].map(u=>({...u,days:daysUntil(u.date)})).filter(u=>u.days!==null).sort((a,b)=>a.days-b.days);
+  const next=upcoming.find(u=>u.days>=0);
+
+  const empty=!totalInvested && !portfolio.stock.length;
+  root.classList.toggle('still',!anim);
+  if(empty){
+    root.innerHTML=`<section class="hero"><div class="eyebrow">Portfolio</div><div class="hero-num">₹0</div>
+      <p class="muted-s" style="margin-bottom:12px">${GAS_URL?'No portfolio data yet — add FD, bonds and stock sheets to your Google Sheet.':'Connect your Google Sheet in Settings to see your portfolio.'}</p>
+      ${GAS_URL?`<button class="btn btn-outline btn-sm" onclick="loadPortfolio({force:true})" style="margin-bottom:12px">↻ Refresh</button>`:''}</section>`;
+    return;
   }
 
-  // ── Fixed Deposits table ──
-  const fdSorted=[...fd].sort((a,b)=>new Date(a['MATURE DATE'])-new Date(b['MATURE DATE']));
-  document.getElementById('pfFD').innerHTML=fdSorted.length
-    ?`<div class="tbl-wrap"><table><thead><tr><th>Bank</th><th>Amount</th><th>Maturity</th><th>Days Left</th><th>Rate</th><th>Maturity Amt</th><th>Image</th></tr></thead><tbody>
-      ${fdSorted.map(r=>{const days=daysUntil(r['MATURE DATE']);const soon=days!==null&&days<=30;
-        return `<tr${soon?' style="background:rgba(245,158,11,.08)"':''}><td><strong>${escHtml(r['INVESTMENTS'])}</strong></td><td><strong>${pfMoney(r['AMOUNT'])}</strong><div class="stat-sub">+${pfMoney(r['RETURN AMOUNT'])} return</div></td>
-        <td>${escHtml(r['MATURE DATE'])}</td><td>${days!==null?days+'d':'—'}</td><td>${r['PERCENTAGE']||'—'}%</td><td>${pfMoney(r['MATURE AMOUNT'])}</td><td>${pfImgBtn(r)}</td></tr>`;}).join('')}
-      </tbody></table></div>`
-    :'<p style="color:var(--muted);text-align:center;padding:20px">No FDs found.</p>';
+  const legend=cats.filter(c=>c.val>0).map((c,i)=>`<div class="lg-row"><i style="background:${c.color}"></i>${c.label}<em>${pfMoney(c.val)} · ${share(c.val).toFixed(0)}%</em>
+    <div class="lg-bar"><div style="width:${share(c.val).toFixed(1)}%;background:${c.color};animation-delay:${i*80}ms"></div></div></div>`).join('');
 
-  // ── Bonds table ──
-  const bondsSorted=[...bonds].sort((a,b)=>new Date(a['Mature Date'])-new Date(b['Mature Date']));
-  document.getElementById('pfBonds').innerHTML=bondsSorted.length
-    ?`<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Platform</th><th>Amount</th><th>Maturity</th><th>Months Left</th><th>Return %</th></tr></thead><tbody>
-      ${bondsSorted.map(r=>`<tr><td><strong>${escHtml(r['Name'])}</strong></td><td>${escHtml(r['App'])}</td><td><strong>${pfMoney(r['Amount invested'])}</strong><div class="stat-sub">+${pfMoney((+r['Mature amount']||0)-(+r['Amount invested']||0))} return</div></td>
-        <td>${escHtml(r['Mature Date'])}</td><td>${r['Months left']??'—'}</td><td>${r['Percentage of return']||'—'}%</td></tr>`).join('')}
-      </tbody></table></div>`
-    :'<p style="color:var(--muted);text-align:center;padding:20px">No bonds found.</p>';
+  const timeline=upcoming.filter(u=>u.days>=0).slice(0,6);
+  const tl=timeline.length?`<div class="tl">${timeline.map(u=>{
+    const d=parseYMD(u.date), [lbl,cls]=untilLabel(u.days), s=parseYMD(u.start);
+    const prog=s&&d&&d>s?Math.min(100,Math.max(0,(Date.now()-s)/(d-s)*100)):null;
+    return `<div class="tl-i" style="--ic:${u.color}">
+      <div class="tl-d"><b>${d?d.getDate():'—'}</b><span>${d?MON[d.getMonth()]+' '+String(d.getFullYear()).slice(2):''}</span></div>
+      <div style="min-width:0"><div class="tl-n">${escHtml(u.name)}</div>
+        <div class="tl-s"><i style="background:${u.color}"></i>${escHtml(u.kind)} · ${pfMoney(u.amt)} → <strong class="pos">${pfMoney(u.mat)}</strong>${u.rate?` · ${u.rate}%`:''}</div>
+        ${prog!==null?`<div class="tl-p" ${tipAttr(`${prog.toFixed(0)}% of the term done`)}><div style="width:${prog.toFixed(1)}%"></div></div>`:''}</div>
+      <span class="pill ${cls}">${lbl}</span></div>`;}).join('')}</div>`
+    :'<div class="empty-s">Nothing maturing — add FDs or bonds to your sheet.</div>';
 
-  // ── Stock & mutual fund tables (sold entries hidden unless toggled) ──
-  document.getElementById('pfStock').innerHTML=holdingsTable(showSoldStocks?stock:stockHolding,'Stock','stock entries');
-  document.getElementById('pfMF').innerHTML=holdingsTable(showSoldStocks?mf:mfHolding,'Fund','mutual fund entries');
+  // Stock performance: realized P&L by stock if anything was sold, otherwise current holdings by cost.
+  // Stock performance: realized P&L by stock for what was sold, then current holdings by cost.
+  const m={}; stockSold.forEach(r=>{const k=String(r['Stock']);(m[k]??={p:0,n:0,inv:0});m[k].p+=+r['Profit']||0;m[k].n++;m[k].inv+=+r['Invested amount']||0;});
+  const soldRows=Object.entries(m).sort((a,b)=>b[1].p-a[1].p).slice(0,8).map(([k,d])=>({name:k,sub:d.inv?`${(d.p/d.inv*100).toFixed(1)}% return`:'',v:d.p,
+    tip:`<b>${escHtml(k)}</b><br>Realized ${rs(d.p,{sign:true,d:2})}<br><span class="t">${d.n} sale${d.n>1?'s':''}${d.inv?' · invested '+pfMoney(d.inv):''}</span>`}));
+  const holdRows=[...stockHolding].sort((a,b)=>(+b['Invested amount']||0)-(+a['Invested amount']||0)).slice(0,8)
+    .map(r=>({name:String(r['Stock']),sub:`${r['Quantity']??'—'} @ ${r['Entry']??'—'}`,v:+r['Invested amount']||0,color:'var(--c3)',
+      tip:`<b>${escHtml(r['Stock'])}</b><br>Invested ${pfMoney(r['Invested amount'])}<br><span class="t">${share(+r['Invested amount']||0).toFixed(1)}% of portfolio</span>`}));
+  const perfTitle='Stocks at a glance';
+  const perfBody=(soldRows.length?`<div class="muted-s" style="margin:0 0 6px 8px">Realized P&amp;L</div>${hBars(soldRows)}`:'')
+    +(holdRows.length?`<div class="muted-s" style="margin:${soldRows.length?'16px':'0'} 0 6px 8px">Holdings by cost</div>${hBars(holdRows,v=>pfMoney(v))}`:'')
+    ||'<div class="empty-s">No stocks yet.</div>';
+
+  const fdSorted=[...fd].sort((a,b)=>(daysUntil(a['MATURE DATE'])??1e9)-(daysUntil(b['MATURE DATE'])??1e9));
+  const bondsSorted=[...bonds].sort((a,b)=>(daysUntil(a['Mature Date'])??1e9)-(daysUntil(b['Mature Date'])??1e9));
+  const dayPill=days=>{const [l,c]=untilLabel(days);return `<span class="pill ${c}">${l}</span>`;};
+
+  root.innerHTML=`
+  <section class="hero fade-up">
+    <div class="hero-split">
+      <div>
+        <div class="hero-top"><div class="eyebrow">Total invested</div>
+          <button class="btn btn-outline btn-sm" onclick="loadPortfolio({force:true})">↻ Refresh</button></div>
+        <div class="hero-num">${cnt(totalInvested,'rs')}</div>
+        <div class="chips">
+          ${fixedGain?`<span class="chip up">▲ ${rs(fixedGain,{sign:true})} locked-in from FDs &amp; bonds</span>`:''}
+          ${realized?`<span class="chip ${realized>0?'up':'down'}">${realized>0?'▲':'▼'} ${rs(realized,{sign:true})} realized</span>`:''}
+          <span class="chip">${holdings} holdings</span>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><span>FDs + bonds at maturity</span><b>${compact(fdMaturity+bondsMaturity)}</b></div>
+          <div class="kpi"><span>Avg FD rate</span><b>${fdRate?fdRate.toFixed(2)+'%':'—'}</b></div>
+          <div class="kpi"><span>Avg bond return</span><b>${bondRate?bondRate.toFixed(2)+'%':'—'}</b></div>
+          <div class="kpi"><span>Next maturity</span><b>${next?untilLabel(next.days)[0].replace(/^in /,''):'—'}</b></div>
+        </div>
+      </div>
+      <div class="donut-wrap" style="justify-content:center;padding-bottom:12px">
+        ${donut(cats.map(c=>({v:c.val,color:c.color,tip:`<b>${c.label}</b><br>${pfMoney(c.val)} · ${share(c.val).toFixed(1)}%`})),176,22,
+          `<b>${compact(totalInvested)}</b><span>${cats.filter(c=>c.val>0).length} asset classes</span>`)}
+        <div class="legend">${legend}</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="dash-grid g-4 tiles">
+    ${cats.map((c,i)=>`<div class="tile fade-up" style="--ic:${c.color};animation-delay:${i*60}ms">
+      ${icon(c.icon,c.color)}
+      <div class="tile-l">${c.label}</div>
+      <div class="tile-v">${cnt(c.show,'rs')}</div>
+      <div class="tile-s">${c.sub}</div>
+      <div class="tile-bar" ${tipAttr(`${share(c.val).toFixed(1)}% of invested`)}><div style="width:${share(c.val).toFixed(1)}%"></div></div>
+    </div>`).join('')}
+  </div>
+
+  <div class="dash-grid g-2">
+    <div class="panel fade-up"><div class="panel-h"><h2>${icon('clock','var(--warn)',1)}Upcoming maturities</h2><span class="hint">${upcoming.filter(u=>u.days>=0&&u.days<=30).length} within 30 days</span></div>${tl}</div>
+    <div class="panel fade-up"><div class="panel-h"><h2>${icon('trend','var(--c3)',1)}${perfTitle}</h2></div>${perfBody}</div>
+  </div>
+
+  <div class="panel flush fade-up"><div class="panel-h"><h2>${icon('bank','var(--c1)',1)}Fixed deposits</h2><span class="hint">${pfMoney(fdInvested)}</span></div>
+      ${fdSorted.length?`<div class="tbl-wrap"><table><thead><tr><th>Bank</th><th>Amount</th><th>Maturity</th><th>Rate</th><th>At maturity</th><th>Image</th></tr></thead><tbody>
+      ${fdSorted.map(r=>`<tr>
+        <td>${nameCell(r['INVESTMENTS'],'var(--c1)')}</td>
+        <td class="num"><strong>${pfMoney(r['AMOUNT'])}</strong><div class="stat-sub">+${pfMoney(r['RETURN AMOUNT'])}</div></td>
+        <td>${escHtml(niceDate(r['MATURE DATE']))}<div style="margin-top:4px">${dayPill(daysUntil(r['MATURE DATE']))}</div></td>
+        <td class="num">${r['PERCENTAGE']||'—'}%</td><td class="num pos"><strong>${pfMoney(r['MATURE AMOUNT'])}</strong></td><td>${pfImgBtn(r)}</td></tr>`).join('')}
+      </tbody></table></div>`:'<div class="empty-s">No FDs found.</div>'}</div>
+    <div class="panel flush fade-up"><div class="panel-h"><h2>${icon('doc','var(--c2)',1)}Bonds</h2><span class="hint">${pfMoney(bondsInvested)}</span></div>
+      ${bondsSorted.length?`<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Amount</th><th>Maturity</th><th>Return</th><th>At maturity</th></tr></thead><tbody>
+      ${bondsSorted.map(r=>`<tr>
+        <td>${nameCell(r['Name'],'var(--c2)',escHtml(r['App']||''))}</td>
+        <td class="num"><strong>${pfMoney(r['Amount invested'])}</strong><div class="stat-sub">+${pfMoney((+r['Mature amount']||0)-(+r['Amount invested']||0))}</div></td>
+        <td>${escHtml(niceDate(r['Mature Date']))}<div style="margin-top:4px">${dayPill(daysUntil(r['Mature Date']))}</div></td>
+        <td class="num">${r['Percentage of return']||'—'}%</td><td class="num pos"><strong>${pfMoney(r['Mature amount'])}</strong></td></tr>`).join('')}
+      </tbody></table></div>`:'<div class="empty-s">No bonds found.</div>'}</div>
+
+  <div class="panel flush fade-up"><div class="panel-h"><h2>${icon('trend','var(--c3)',1)}Stocks</h2><button class="btn btn-outline btn-sm" id="pfStockToggle" onclick="toggleSoldStocks()">${showSoldStocks?'Hide sold':'Show sold'}</button></div>
+    ${holdingsTable(showSoldStocks?stock:stockHolding,'Stock','stock entries','var(--c3)')}</div>
+  <div class="panel flush fade-up"><div class="panel-h"><h2>${icon('pie','var(--c4)',1)}Mutual funds</h2><button class="btn btn-outline btn-sm" id="pfMFToggle" onclick="toggleSoldStocks()">${showSoldStocks?'Hide sold':'Show sold'}</button></div>
+    ${holdingsTable(showSoldStocks?mf:mfHolding,'Fund','mutual fund entries','var(--c4)')}</div>`;
+  countUp(root, anim);
 }
 
-function holdingsTable(rows, nameLabel, noun){
+function holdingsTable(rows, nameLabel, noun, ic){
   const isSold=r=>String(r['Status']||'').toLowerCase()==='sold';
   return rows.length
-    ?`<div class="tbl-wrap"><table><thead><tr><th>${nameLabel}</th><th>Buy Date</th><th>Entry</th><th>Qty</th><th>Invested</th><th>Exit</th><th>Sell Date</th><th>Profit</th><th>%</th><th>Status</th></tr></thead><tbody>
+    ?`<div class="tbl-wrap"><table><thead><tr><th>${nameLabel}</th><th>Buy date</th><th>Entry</th><th>Qty</th><th>Invested</th><th>Exit</th><th>Sell date</th><th>Profit</th><th>Status</th></tr></thead><tbody>
       ${rows.map(r=>{const sold=isSold(r);const profit=+r['Profit']||0;
-        return `<tr><td><strong>${escHtml(r['Stock'])}</strong></td><td>${r['Buy Date']||'—'}</td><td>${r['Entry']??'—'}</td><td>${r['Quantity']??'—'}</td>
-        <td>${pfMoney(r['Invested amount'])}</td><td>${r['Exit']??'—'}</td><td>${r['Sell Date']||'—'}</td>
-        <td class="${sold?(profit>=0?'ppos':'pneg'):''}">${sold?(profit>=0?'+':'')+profit.toFixed(2):'—'}</td><td>${sold?(r['Percentage']??'—')+'%':'—'}</td><td>${escHtml(r['Status']||'—')}</td></tr>`;}).join('')}
+        return `<tr><td>${nameCell(r['Stock'],ic)}</td><td>${escHtml(niceDate(r['Buy Date'])||'—')}</td><td class="num">${r['Entry']??'—'}</td><td class="num">${r['Quantity']??'—'}</td>
+        <td class="num"><strong>${pfMoney(r['Invested amount'])}</strong></td><td class="num">${r['Exit']??'—'}</td><td>${r['Sell Date']?escHtml(niceDate(r['Sell Date'])):'—'}</td>
+        <td class="num ${sold?(profit>=0?'ppos':'pneg'):''}">${sold?rs(profit,{sign:true,d:2})+`<div class="stat-sub">${r['Percentage']??'—'}%</div>`:'—'}</td>
+        <td><span class="badge ${sold?'':'b-long'}" style="${sold?'background:var(--card2);color:var(--sec)':''}">${escHtml(r['Status']||'Holding')}</span></td></tr>`;}).join('')}
       </tbody></table></div>`
-    :`<p style="color:var(--muted);text-align:center;padding:20px">${showSoldStocks?'No '+noun+' found.':'No active holdings.'}</p>`;
+    :`<div class="empty-s">${showSoldStocks?'No '+noun+' found.':'No active holdings.'}</div>`;
 }
 
 function toBase64(file){
@@ -1721,134 +1917,371 @@ function renderHistory(){
 }
 
 // ─── STATS ───────────────────────────────────────────────────
-function renderStats(){
-  const closed=[...trades].filter(t=>t.netPnl!=='').sort((a,b)=>a.date.localeCompare(b.date)||a.ts.localeCompare(b.ts));
-  const wins=closed.filter(t=>+t.netPnl>0);
-  const losses=closed.filter(t=>+t.netPnl<0);
-  const sumNet=arr=>arr.reduce((s,t)=>s+(+t.netPnl||0),0);
-  const sumGross=arr=>arr.reduce((s,t)=>s+(+t.pnl||0),0);
-  const totalPnl=sumNet(closed);
-  const winRate=closed.length?(wins.length/closed.length*100).toFixed(1):null;
-  const avgWin=wins.length?sumNet(wins)/wins.length:null;
-  const avgLoss=losses.length?sumNet(losses)/losses.length:null;
-  const gW=sumNet(wins), gL=Math.abs(sumNet(losses));
-  const pf=gL>0?(gW/gL).toFixed(2):wins.length?'∞':null;
-  const best=wins.length?Math.max(...wins.map(t=>+t.netPnl)):null;
-  const worst=losses.length?Math.min(...losses.map(t=>+t.netPnl)):null;
-  const fmt=(v,plus=false)=>v===null?'—':`${plus&&v>=0?'+':''}${v.toFixed(2)}`;
+// ─── DASHBOARD HELPERS ───────────────────────────────────────
+const ICONS={
+  trend:'<polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  scale:'<path d="M12 4v16M8 20h8M5 8h14M5 8l-3 6a3 3 0 006 0zM19 8l-3 6a3 3 0 006 0z"/>',
+  bolt:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  arrows:'<path d="M7 17V5M3 9l4-4 4 4M17 7v12M13 15l4 4 4-4"/>',
+  calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  bars:'<path d="M4 20V11M10 20V5M16 20v-6M21 20H3"/>',
+  tag:'<path d="M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0L3 13V3h10l7.6 7.6a2 2 0 010 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  bank:'<path d="M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18M12 3l9 5H3z"/>',
+  doc:'<path d="M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6"/>',
+  pie:'<path d="M21 12A9 9 0 1112 3v9z"/><path d="M15 3.5A9 9 0 0120.5 9H15z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  wallet:'<rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2M6 6l10-3 1 3"/>',
+};
+const icon=(k,c='var(--primary)',sm)=>`<span class="ico${sm?' sm':''}" style="--ic:${c}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg></span>`;
+const inr=(v,d=0)=>(+v||0).toLocaleString('en-IN',{minimumFractionDigits:d,maximumFractionDigits:d});
+function rs(v,{sign=false,d=0}={}){const n=+v||0;return (n<0?'-':sign&&n>0?'+':'')+'₹'+inr(Math.abs(n),d);}
+function compact(v,cur=true){const a=Math.abs(v),s=v<0?'-':'',p=cur?'₹':'';
+  if(a>=1e7)return s+p+(a/1e7).toFixed(2)+'Cr';if(a>=1e5)return s+p+(a/1e5).toFixed(1)+'L';if(a>=1e3)return s+p+(a/1e3).toFixed(1)+'k';return s+p+a.toFixed(0);}
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function niceDate(iso){const [y,m,d]=String(iso).split('-').map(Number);return y&&m&&d?`${d} ${MON[m-1]} ${String(y).slice(2)}`:String(iso||'');}
+const tone=v=>v>0?'pos':v<0?'neg':'';
+function numFmt(v,f){
+  switch(f){case 'rs2':return rs(v,{sign:true,d:2});case 'rs':return rs(v);case 'rss':return rs(v,{sign:true});
+    case 'pct':return v.toFixed(1)+'%';case 'int':return String(Math.round(v));default:return String(v);}
+}
+// Numbers tick up from zero when a dashboard is opened, not on every live update.
+function countUp(root, anim){
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  root.querySelectorAll('[data-count]').forEach(el=>{
+    const to=+el.dataset.count, f=el.dataset.fmt;
+    if(!anim||reduce){ el.textContent=numFmt(to,f); return; }
+    const t0=performance.now(), dur=900;
+    const step=now=>{const p=Math.min(1,(now-t0)/dur);el.textContent=numFmt(to*(1-Math.pow(1-p,3)),f);if(p<1)requestAnimationFrame(step);};
+    requestAnimationFrame(step);
+  });
+}
+const cnt=(v,f)=>`<span data-count="${v}" data-fmt="${f}">${numFmt(v,f)}</span>`;
+const tipAttr=html=>`data-tip="${escHtml(html)}"`;
 
-  // Streak
-  let streak=0,streakType='';
-  for(let i=closed.length-1;i>=0;i--){
-    const w=+closed[i].netPnl>0;
-    if(!streak){streakType=w?'W':'L';streak=1;}
-    else if((w&&streakType==='W')||(!w&&streakType==='L'))streak++;
-    else break;
-  }
-  // Max drawdown
-  let peak=0,maxDD=0,runPnl=0;
-  closed.forEach(t=>{runPnl+=+t.netPnl||0;if(runPnl>peak)peak=runPnl;const dd=peak-runPnl;if(dd>maxDD)maxDD=dd;});
+// One shared tooltip for every chart: marks carry their text in data-tip.
+const ctip=document.createElement('div'); ctip.className='ctip'; document.body.appendChild(ctip);
+function showTip(html,x,y){
+  ctip.innerHTML=html; ctip.classList.add('on');
+  const r=ctip.getBoundingClientRect();
+  let L=x+14, T=y-r.height-12;
+  if(L+r.width>innerWidth-8) L=x-r.width-14;
+  if(L<8) L=8; if(T<8) T=y+18;
+  ctip.style.left=L+'px'; ctip.style.top=T+'px';
+}
+function hideTip(){ ctip.classList.remove('on'); }
+['pointermove','pointerdown'].forEach(ev=>document.addEventListener(ev,e=>{
+  const t=e.target.closest?.('[data-tip]');
+  if(t) showTip(t.dataset.tip,e.clientX,e.clientY);
+  else if(!e.target.closest?.('.chart-box')) hideTip();
+}));
+window.addEventListener('scroll',hideTip,{passive:true});
+let dashResizeT=0;
+window.addEventListener('resize',()=>{clearTimeout(dashResizeT);dashResizeT=setTimeout(()=>{if(currentTab==='stats')renderStats();},150);});
 
-  document.getElementById('sTot').textContent=`${trades.length} (${closed.length} closed)`;
-  document.getElementById('sWR').textContent=winRate?winRate+'%':'—';
-  const pEl=document.getElementById('sPnl');
-  pEl.textContent=closed.length?fmt(totalPnl,true):'—';
-  pEl.className='stat-val '+(totalPnl>=0?'pos':'neg');
-  document.getElementById('sAW').textContent=avgWin?fmt(avgWin,true):'—';
-  document.getElementById('sAL').textContent=avgLoss?fmt(avgLoss):'—';
-  document.getElementById('sPF').textContent=pf||'—';
-  document.getElementById('sBest').textContent=best?fmt(best,true):'—';
-  document.getElementById('sWorst').textContent=worst?fmt(worst):'—';
-  const sEl=document.getElementById('sStreak');
-  sEl.textContent=streak?`${streak} ${streakType==='W'?'Win':'Loss'}${streak>1?'s':''}`:'—';
-  sEl.className='stat-val '+(streakType==='W'?'pos':'neg');
-  document.getElementById('sDD').textContent=maxDD?`-${maxDD.toFixed(2)}`:'—';
-
-  // ── By Market ──
-  const byMkt={};
-  closed.forEach(t=>{const m=t.mkt||'Other';if(!byMkt[m])byMkt[m]={n:0,pnl:0,wins:0};byMkt[m].n++;byMkt[m].pnl+=+t.netPnl||0;if(+t.netPnl>0)byMkt[m].wins++;});
-  const mktTbl=(map,el)=>{const e=Object.entries(map).sort((a,b)=>Math.abs(b[1].pnl)-Math.abs(a[1].pnl));
-    document.getElementById(el).innerHTML=e.length
-      ?`<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Trades</th><th>Win%</th><th>Net P&amp;L</th></tr></thead><tbody>
-        ${e.map(([n,d])=>`<tr><td><strong>${n}</strong></td><td>${d.n}</td><td>${(d.wins/d.n*100).toFixed(0)}%</td>
-        <td class="${d.pnl>=0?'ppos':'pneg'}">${d.pnl>=0?'+':''}${d.pnl.toFixed(2)}</td></tr>`).join('')}
-        </tbody></table></div>`
-      :'<p style="color:var(--muted);text-align:center;padding:20px">No data.</p>';};
-  mktTbl(byMkt,'mktStats');
-
-  // ── By Symbol ──
-  const bySym={};
-  closed.forEach(t=>{if(!bySym[t.sym])bySym[t.sym]={n:0,pnl:0,wins:0};bySym[t.sym].n++;bySym[t.sym].pnl+=+t.netPnl||0;if(+t.netPnl>0)bySym[t.sym].wins++;});
-  mktTbl(bySym,'symStats');
-
-  // ── Monthly Breakdown ──
-  const byMonth={};
-  closed.forEach(t=>{const k=t.date.substring(0,7);if(!byMonth[k])byMonth[k]={n:0,pnl:0,wins:0};byMonth[k].n++;byMonth[k].pnl+=+t.netPnl||0;if(+t.netPnl>0)byMonth[k].wins++;});
-  const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const mEntries=Object.entries(byMonth).sort((a,b)=>b[0].localeCompare(a[0]));
-  document.getElementById('monthStats').innerHTML=mEntries.length
-    ?`<div class="tbl-wrap"><table><thead><tr><th>Month</th><th>Trades</th><th>Win%</th><th>Net P&amp;L</th></tr></thead><tbody>
-      ${mEntries.map(([k,d])=>{const[yr,mo]=k.split('-');return`<tr><td>${MN[+mo-1]} ${yr}</td><td>${d.n}</td>
-        <td>${(d.wins/d.n*100).toFixed(0)}%</td><td class="${d.pnl>=0?'ppos':'pneg'}">${d.pnl>=0?'+':''}${d.pnl.toFixed(2)}</td></tr>`;}).join('')}
-      </tbody></table></div>`
-    :'<p style="color:var(--muted);text-align:center;padding:20px">No data.</p>';
-
-  // ── Day of Week bar chart ──
-  const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const dowData=Array(7).fill(null).map(()=>({n:0,pnl:0}));
-  closed.forEach(t=>{if(!t.date)return;const[y,m,d]=t.date.split('-').map(Number);const dow=new Date(y,m-1,d).getDay();dowData[dow].n++;dowData[dow].pnl+=+t.netPnl||0;});
-  const maxAbs=Math.max(...dowData.map(d=>Math.abs(d.pnl)),1);
-  document.getElementById('dowStats').innerHTML=`<div class="dow-wrap">
-    ${DOW.map((lbl,i)=>{const d=dowData[i];const h=d.n?(Math.abs(d.pnl)/maxAbs*85).toFixed(0):0;const col=d.pnl>=0?'var(--success)':'var(--danger)';
-      return`<div class="dow-col">
-        ${d.n?`<div class="dow-val" style="color:${col}">${d.pnl>=0?'+':''}${d.pnl.toFixed(0)}</div>`:'<div class="dow-val" style="color:var(--muted)">—</div>'}
-        <div class="dow-bar" style="height:${h}px;background:${d.n?col:'var(--border)'}"></div>
-        <div class="dow-lbl">${lbl}</div>
-      </div>`;}).join('')}
-  </div>`;
-
-  // ── Equity Curve ──
-  drawEquityCurve(closed);
+// Diverging horizontal bars: rows of {name, sub, v, tip}. Zero sits where the data needs it.
+function hBars(rows, fmt=v=>rs(v,{sign:true})){
+  if(!rows.length) return '<div class="empty-s">No data yet.</div>';
+  const maxP=Math.max(0,...rows.map(r=>r.v)), maxN=Math.max(0,...rows.map(r=>-r.v)), span=(maxP+maxN)||1;
+  const z=(maxN/span*100).toFixed(2);
+  return `<div class="hbars">${rows.map((r,i)=>{
+    const w=(Math.abs(r.v)/span*100).toFixed(2);
+    return `<div class="hb" ${tipAttr(r.tip)}><div class="hb-n">${escHtml(r.name)}${r.sub?`<small>${r.sub}</small>`:''}</div>
+      <div class="hb-t" style="--z:${z}%"><div class="hb-f ${r.v>=0?'p':'n'}" style="width:${w}%;${r.color?`background:${r.color};`:''}animation-delay:${i*40}ms"></div></div>
+      <div class="hb-v ${r.color?'':tone(r.v)}">${fmt(r.v)}</div></div>`;}).join('')}</div>`;
+}
+// Diverging vertical bars: cols of {label, v, n, tip}.
+function vBars(cols, {cls='', showVal=true}={}){
+  const maxP=Math.max(0,...cols.map(c=>c.v)), maxN=Math.max(0,...cols.map(c=>-c.v)), span=(maxP+maxN)||1;
+  const z=(maxP/span*100).toFixed(2);
+  return `<div class="vbars ${cls}">${cols.map((c,i)=>{
+    const h=(Math.abs(c.v)/span*100).toFixed(2);
+    return `<div class="vb" ${tipAttr(c.tip)}>
+      ${showVal?`<div class="vb-v ${tone(c.v)}">${c.n?compact(c.v,false):''}</div>`:''}
+      <div class="vb-plot" style="--z:${z}%">${c.n?`<div class="vb-f ${c.v>=0?'p':'n'}" style="height:${h}%;animation-delay:${i*(cls?12:50)}ms"></div>`:''}</div>
+      ${c.label!=null?`<div class="vb-l">${c.label}</div>`:''}</div>`;}).join('')}</div>`;
+}
+function donut(segs, size, stroke, center){
+  const r=(size-stroke)/2, C=2*Math.PI*r, total=segs.reduce((s,x)=>s+x.v,0)||1, gap=segs.filter(s=>s.v>0).length>1?3:0;
+  let off=0;
+  const arcs=segs.filter(s=>s.v>0).map(s=>{
+    const len=Math.max(0,s.v/total*C-gap);
+    const a=`<circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${stroke}" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" stroke-linecap="butt" ${tipAttr(s.tip||'')} style="cursor:default"/>`;
+    off+=s.v/total*C; return a;});
+  return `<div class="donut" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--card2)" stroke-width="${stroke}"/>${arcs.join('')}</svg>
+    <div class="donut-c">${center}</div></div>`;
 }
 
-function drawEquityCurve(closed){
-  const el=document.getElementById('equityChart');
-  if(!el)return;
-  if(closed.length<2){el.innerHTML='<p style="text-align:center;color:var(--muted);padding:32px">Need at least 2 closed trades.</p>';return;}
+// ─── STATS ───────────────────────────────────────────────────
+const STATS_RANGES=[['1m','1M',30],['3m','3M',91],['1y','1Y',365],['all','All',0]];
+let statsRange='all', statsAnimNext=false;
+function setStatsRange(r){ statsRange=r; statsAnimNext=true; renderStats(); }
+
+function renderStats(){
+  const root=document.getElementById('statsRoot');
+  if(!root) return;
+  const anim=statsAnimNext; statsAnimNext=false;
+  const allClosed=[...trades].filter(t=>t.netPnl!=='').sort((a,b)=>a.date.localeCompare(b.date)||a.ts.localeCompare(b.ts));
+  const days=STATS_RANGES.find(r=>r[0]===statsRange)[2];
+  const cutoff=days?new Date(Date.now()-days*864e5).toISOString().slice(0,10):'';
+  const closed=cutoff?allClosed.filter(t=>t.date>=cutoff):allClosed;
+  const openN=trades.filter(t=>t.netPnl==='').length;
+  const P=t=>+t.netPnl||0;
+  const wins=closed.filter(t=>P(t)>0), losses=closed.filter(t=>P(t)<0), even=closed.length-wins.length-losses.length;
+  const sum=a=>a.reduce((s,t)=>s+P(t),0);
+  const total=sum(closed), gW=sum(wins), gL=Math.abs(sum(losses));
+  const winRate=closed.length?wins.length/closed.length*100:0;
+  const avgWin=wins.length?gW/wins.length:0, avgLoss=losses.length?-gL/losses.length:0;
+  const pf=gL>0?(gW/gL).toFixed(2):wins.length?'∞':'—';
+  const expect=closed.length?total/closed.length:0;
+  const best=wins.length?Math.max(...wins.map(P)):0, worst=losses.length?Math.min(...losses.map(P)):0;
+  const payoff=avgLoss?avgWin/Math.abs(avgLoss):0;
+  let peak=0,run=0,maxDD=0; closed.forEach(t=>{run+=P(t);peak=Math.max(peak,run);maxDD=Math.max(maxDD,peak-run);});
+  // streaks
+  let streak=0,sType=''; for(let i=closed.length-1;i>=0;i--){const w=P(closed[i])>0;if(!streak){sType=w?'W':'L';streak=1;}else if(w===(sType==='W'))streak++;else break;}
+  let bestW=0,bestL=0,cw=0,cl=0; closed.forEach(t=>{if(P(t)>0){cw++;cl=0;}else{cl++;cw=0;}bestW=Math.max(bestW,cw);bestL=Math.max(bestL,cl);});
+  const monthKey=new Date().toISOString().slice(0,7);
+  const thisMonth=sum(allClosed.filter(t=>t.date.startsWith(monthKey)));
+  const rangeLbl={'1m':'last 30 days','3m':'last 3 months','1y':'last 12 months','all':'all time'}[statsRange];
+
+  const seg=`<div class="seg" role="group" aria-label="Date range">${STATS_RANGES.map(([k,l])=>`<button class="${k===statsRange?'on':''}" onclick="setStatsRange('${k}')">${l}</button>`).join('')}</div>`;
+
+  // Long vs short
+  const dirStat=d=>{const a=closed.filter(t=>(t.dir||'Long')===d);return{n:a.length,w:a.filter(t=>P(t)>0).length,p:sum(a)};};
+  const L=dirStat('Long'), S=dirStat('Short');
+
+  // By symbol / market
+  const group=key=>{const m={};closed.forEach(t=>{const k=t[key]||'Other';(m[k]??={n:0,w:0,p:0});m[k].n++;m[k].p+=P(t);if(P(t)>0)m[k].w++;});return Object.entries(m).sort((a,b)=>b[1].p-a[1].p);};
+  const toRows=entries=>entries.map(([k,d])=>({name:k,sub:`${d.n} trade${d.n>1?'s':''} · ${(d.w/d.n*100).toFixed(0)}% win`,v:d.p,
+    tip:`<b>${escHtml(k)}</b><br>${rs(d.p,{sign:true,d:2})}<br><span class="t">${d.n} trades · ${d.w} wins · ${(d.w/d.n*100).toFixed(0)}% win rate</span>`}));
+  // Top 7 symbols by size of P&L (either way), the rest folded into "Other"; winners on top.
+  let sym=group('sym');
+  if(sym.length>8){
+    const keep=new Set([...sym].sort((a,b)=>Math.abs(b[1].p)-Math.abs(a[1].p)).slice(0,7).map(e=>e[0]));
+    const rest=sym.filter(e=>!keep.has(e[0]));
+    const o=rest.reduce((a,[,d])=>({n:a.n+d.n,w:a.w+d.w,p:a.p+d.p}),{n:0,w:0,p:0});
+    sym=[...sym.filter(e=>keep.has(e[0])),[`Other (${rest.length})`,o]];
+  }
+  const mkt=group('mkt');
+
+  // Day of week
+  const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dow=DOW.map(()=>({n:0,p:0,w:0}));
+  closed.forEach(t=>{const[y,m,d]=t.date.split('-').map(Number);if(!y)return;const k=new Date(y,m-1,d).getDay();dow[k].n++;dow[k].p+=P(t);if(P(t)>0)dow[k].w++;});
+  const dowCols=[1,2,3,4,5,6,0].filter(i=>i>=1&&i<=5||dow[i].n).map(i=>({label:DOW[i],v:dow[i].p,n:dow[i].n,
+    tip:`<b>${DOW[i]}</b><br>${rs(dow[i].p,{sign:true,d:2})}<br><span class="t">${dow[i].n} trades${dow[i].n?' · '+(dow[i].w/dow[i].n*100).toFixed(0)+'% win':''}</span>`}));
+
+  // Daily P&L (last 45 trading days in range)
+  const byDay={}; closed.forEach(t=>{(byDay[t.date]??={n:0,p:0});byDay[t.date].n++;byDay[t.date].p+=P(t);});
+  const dayKeys=Object.keys(byDay).sort().slice(-45);
+  const greenDays=Object.values(byDay).filter(d=>d.p>0).length, allDays=Object.keys(byDay).length;
+  const dayCols=dayKeys.map(k=>({label:null,v:byDay[k].p,n:byDay[k].n,tip:`<b>${niceDate(k)}</b><br>${rs(byDay[k].p,{sign:true,d:2})}<br><span class="t">${byDay[k].n} trade${byDay[k].n>1?'s':''}</span>`}));
+
+  // Monthly heatmap
+  const byMonth={}; closed.forEach(t=>{const k=t.date.slice(0,7);(byMonth[k]??={n:0,p:0,w:0});byMonth[k].n++;byMonth[k].p+=P(t);if(P(t)>0)byMonth[k].w++;});
+  const years=[...new Set(Object.keys(byMonth).map(k=>k.slice(0,4)))].sort().reverse();
+  const maxM=Math.max(1,...Object.values(byMonth).map(d=>Math.abs(d.p)));
+  const heat=years.length?`<div class="heat-scroll"><div class="heat"><div></div>${MON.map(m=>`<div class="hd">${m}</div>`).join('')}<div class="hd" style="text-align:right">Total</div>
+    ${years.map(y=>{let yt=0;return `<div class="yr">${y}</div>${MON.map((m,i)=>{const d=byMonth[`${y}-${String(i+1).padStart(2,'0')}`];
+      if(!d) return '<div class="cell"></div>';
+      yt+=d.p;const k=Math.round(18+72*Math.abs(d.p)/maxM);const c=d.p>=0?'var(--success)':'var(--danger)';
+      return `<div class="cell" style="background:color-mix(in srgb,${c} ${k}%,var(--card2));color:${k>55?'var(--on-strong)':'var(--text)'}" ${tipAttr(`<b>${m} ${y}</b><br>${rs(d.p,{sign:true,d:2})}<br><span class="t">${d.n} trades · ${(d.w/d.n*100).toFixed(0)}% win</span>`)}>${compact(d.p,false)}</div>`;}).join('')}
+      <div class="tot ${tone(yt)}">${compact(yt)}</div>`;}).join('')}</div></div>`
+    :'<div class="empty-s">No closed trades in this range.</div>';
+
+  // Recent form
+  const last=closed.slice(-24);
+  const formRow=last.length?`<div class="form-row">${last.map((t,i)=>`<i class="${P(t)>0?'w':P(t)<0?'l':'e'}" style="animation-delay:${i*25}ms" ${tipAttr(`<b>${escHtml(t.sym)}</b> · ${niceDate(t.date)}<br>${rs(P(t),{sign:true,d:2})}`)}></i>`).join('')}</div>`:'<div class="empty-s">No trades yet.</div>';
+
+  const maxAvg=Math.max(avgWin,Math.abs(avgLoss))||1;
+  const nDir=(L.n+S.n)||1;
+
+  root.classList.toggle('still',!anim);
+  root.innerHTML=`
+  <section class="hero fade-up">
+    <div class="hero-top">
+      <div>
+        <div class="eyebrow">Net P&amp;L · ${rangeLbl}</div>
+        <div class="hero-num ${tone(total)}">${cnt(total,'rs2')}</div>
+        <div class="chips">
+          <span class="chip">${wins.length} wins · ${losses.length} losses${even?` · ${even} flat`:''}</span>
+          <span class="chip ${thisMonth>0?'up':thisMonth<0?'down':''}">${thisMonth>=0?'▲':'▼'} ${rs(thisMonth,{sign:true})} this month</span>
+          ${openN?`<span class="chip">${openN} open</span>`:''}
+        </div>
+      </div>
+      ${seg}
+    </div>
+    <div class="kpis">
+      <div class="kpi"><span>Closed trades</span><b>${cnt(closed.length,'int')}</b></div>
+      <div class="kpi"><span>Win rate</span><b>${cnt(winRate,'pct')}</b></div>
+      <div class="kpi"><span>Profit factor</span><b>${pf}</b></div>
+      <div class="kpi"><span>Expectancy / trade</span><b class="${tone(expect)}">${cnt(expect,'rss')}</b></div>
+      <div class="kpi"><span>Best trade</span><b class="pos">${cnt(best,'rss')}</b></div>
+      <div class="kpi"><span>Worst trade</span><b class="neg">${cnt(worst,'rss')}</b></div>
+      <div class="kpi"><span>Max drawdown</span><b class="${maxDD?'neg':''}">${maxDD?'-'+rs(maxDD):'₹0'}</b></div>
+    </div>
+    <div class="chart-box" id="equityChart"></div>
+  </section>
+
+  <div class="dash-grid g-4">
+    <div class="panel fade-up">
+      <div class="panel-h"><h2>${icon('target','var(--success)',1)}Win rate</h2></div>
+      <div class="donut-wrap">
+        ${donut([{v:wins.length,color:'var(--success)',tip:`<b>Wins</b><br>${wins.length} trades · ${rs(gW,{sign:true})}`},
+                 {v:losses.length,color:'var(--danger)',tip:`<b>Losses</b><br>${losses.length} trades · ${rs(-gL,{sign:true})}`},
+                 {v:even,color:'var(--border2)',tip:`<b>Flat</b><br>${even} trades`}],120,14,
+                 `<b>${cnt(winRate,'pct')}</b><span>${closed.length} trades</span>`)}
+        <div class="legend" style="min-width:90px">
+          <div class="lg-row"><i style="background:var(--success)"></i>Wins<em>${wins.length}</em></div>
+          <div class="lg-row"><i style="background:var(--danger)"></i>Losses<em>${losses.length}</em></div>
+          ${even?`<div class="lg-row"><i style="background:var(--border2)"></i>Flat<em>${even}</em></div>`:''}
+        </div>
+      </div>
+    </div>
+    <div class="panel fade-up">
+      <div class="panel-h"><h2>${icon('scale','var(--c1)',1)}Win vs loss size</h2></div>
+      <div class="big">${payoff?payoff.toFixed(2)+'×':'—'}</div>
+      <div class="muted-s">average win ÷ average loss</div>
+      <div class="cmp">
+        <div class="cmp-r"><span>Avg win</span><div class="cmp-t"><div style="width:${(avgWin/maxAvg*100).toFixed(1)}%;background:var(--success)"></div></div><b class="pos num">${rs(avgWin,{sign:true})}</b></div>
+        <div class="cmp-r"><span>Avg loss</span><div class="cmp-t"><div style="width:${(Math.abs(avgLoss)/maxAvg*100).toFixed(1)}%;background:var(--danger)"></div></div><b class="neg num">${rs(avgLoss,{sign:true})}</b></div>
+      </div>
+    </div>
+    <div class="panel fade-up">
+      <div class="panel-h"><h2>${icon('bolt','var(--warn)',1)}Recent form</h2><span class="hint">last ${last.length}</span></div>
+      <div class="big ${sType==='W'?'pos':sType==='L'?'neg':''}">${streak?`${streak} ${sType==='W'?'win':'loss'}${streak>1?(sType==='W'?'s':'es'):''}`:'—'}</div>
+      <div class="muted-s" style="margin-bottom:12px">current streak · best ${bestW}W · worst ${bestL}L</div>
+      ${formRow}
+    </div>
+    <div class="panel fade-up">
+      <div class="panel-h"><h2>${icon('arrows','var(--c3)',1)}Long vs short</h2></div>
+      <div class="split"><div style="flex:${L.n||0.0001};background:var(--c1)"></div><div style="flex:${S.n||0.0001};background:var(--c4)"></div></div>
+      <div class="legend">
+        <div class="lg-row"><i style="background:var(--c1)"></i>Long · ${L.n} (${(L.n/nDir*100).toFixed(0)}%)<em class="${tone(L.p)}">${rs(L.p,{sign:true})}</em></div>
+        <div class="muted-s" style="margin:-6px 0 0 20px">${L.n?(L.w/L.n*100).toFixed(0)+'% win rate':'no trades'}</div>
+        <div class="lg-row"><i style="background:var(--c4)"></i>Short · ${S.n} (${(S.n/nDir*100).toFixed(0)}%)<em class="${tone(S.p)}">${rs(S.p,{sign:true})}</em></div>
+        <div class="muted-s" style="margin:-6px 0 0 20px">${S.n?(S.w/S.n*100).toFixed(0)+'% win rate':'no trades'}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel fade-up">
+    <div class="panel-h"><h2>${icon('bars','var(--c2)',1)}Daily P&amp;L</h2><span class="hint">${allDays?`${greenDays} of ${allDays} days green (${(greenDays/allDays*100).toFixed(0)}%)`:''}</span></div>
+    ${dayCols.length?vBars(dayCols,{cls:'daily',showVal:false})+`<div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--sec);margin-top:6px"><span>${niceDate(dayKeys[0])}</span><span>${niceDate(dayKeys[dayKeys.length-1])}</span></div>`:'<div class="empty-s">No closed trades in this range.</div>'}
+  </div>
+
+  <div class="dash-grid g-2">
+    <div class="panel fade-up"><div class="panel-h"><h2>${icon('tag','var(--c1)',1)}By symbol</h2></div>${hBars(toRows(sym))}</div>
+    <div class="dash">
+      <div class="panel fade-up"><div class="panel-h"><h2>${icon('grid','var(--c3)',1)}By market</h2></div>${hBars(toRows(mkt))}</div>
+      <div class="panel fade-up"><div class="panel-h"><h2>${icon('calendar','var(--c4)',1)}Day of week</h2></div>${closed.length?vBars(dowCols):'<div class="empty-s">No data yet.</div>'}</div>
+    </div>
+  </div>
+
+  <div class="panel fade-up"><div class="panel-h"><h2>${icon('calendar','var(--c2)',1)}Monthly returns</h2><span class="hint">darker = bigger month</span></div>${heat}</div>`;
+  equityChart(document.getElementById('equityChart'), closed);
+  countUp(root, anim);
+}
+
+function equityChart(el, closed){
+  if(closed.length<2){ el.innerHTML='<div class="empty-s">Log at least 2 closed trades to see your equity curve.</div>'; return; }
   let cum=0;
-  const pts=closed.map(t=>{cum+=+t.netPnl||0;return cum;});
-  const W=900,H=200,PL=58,PR=24,PT=14,PB=28;
-  const pW=W-PL-PR,pH=H-PT-PB;
-  const minV=Math.min(0,...pts),maxV=Math.max(0,...pts);
-  const rng=maxV-minV||1;
-  const x=i=>PL+(i/(pts.length-1))*pW;
-  const y=v=>PT+pH-((v-minV)/rng)*pH;
-  const z=y(0);
-  const line=pts.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
-  const area=`${line} L${x(pts.length-1).toFixed(1)} ${z.toFixed(1)} L${x(0).toFixed(1)} ${z.toFixed(1)} Z`;
-  const fin=pts[pts.length-1];
-  const col=fin>=0?'#1e8e3e':'#d93025';
-  const TICKS=5;
-  let yAxis='';
-  for(let i=0;i<=TICKS;i++){const v=minV+(rng/TICKS)*i;const yy=y(v);
-    yAxis+=`<line x1="${PL}" y1="${yy.toFixed(1)}" x2="${W-PR}" y2="${yy.toFixed(1)}" stroke="var(--border)" stroke-width="0.6"/>
-    <text x="${(PL-6).toFixed(0)}" y="${yy.toFixed(1)}" text-anchor="end" dominant-baseline="middle" fill="var(--muted)" font-size="9">${v>=0?'+':''}${v.toFixed(0)}</text>`;}
-  const step=Math.max(1,Math.floor(pts.length/7));
-  let xAxis='';
-  for(let i=0;i<pts.length;i+=step){xAxis+=`<text x="${x(i).toFixed(1)}" y="${(H-PB+13).toFixed(0)}" text-anchor="middle" fill="var(--muted)" font-size="9">${closed[i].date.substring(5)}</text>`;}
-  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
-    <defs><linearGradient id="eqG" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${col}" stop-opacity="0.28"/>
-      <stop offset="100%" stop-color="${col}" stop-opacity="0.02"/>
-    </linearGradient></defs>
-    ${yAxis}
-    <line x1="${PL}" y1="${z.toFixed(1)}" x2="${W-PR}" y2="${z.toFixed(1)}" stroke="${col}" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
-    <path d="${area}" fill="url(#eqG)"/>
-    <path d="${line}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    ${xAxis}
-    <circle cx="${x(pts.length-1).toFixed(1)}" cy="${y(fin).toFixed(1)}" r="4" fill="${col}"/>
-    <text x="${x(pts.length-1).toFixed(1)}" y="${(y(fin)-10).toFixed(0)}" text-anchor="middle" fill="${col}" font-size="10" font-weight="bold">${fin>=0?'+':''}${fin.toFixed(0)}</text>
+  const pts=[0,...closed.map(t=>cum+=+t.netPnl||0)];
+  const W=el.clientWidth||900, H=W<600?190:250, PL=8, PR=W<600?44:56, PT=16, PB=24, pW=W-PL-PR, pH=H-PT-PB, n=pts.length;
+  let minV=Math.min(0,...pts), maxV=Math.max(0,...pts); const pad=(maxV-minV||1)*.08; minV-=minV<0?pad:0; maxV+=pad;
+  const x=i=>PL+i/(n-1)*pW, y=v=>PT+pH-(v-minV)/(maxV-minV)*pH;
+  const line=pts.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join('');
+  const area=`${line}L${x(n-1).toFixed(1)} ${PT+pH}L${x(0).toFixed(1)} ${PT+pH}Z`;
+  const fin=pts[n-1], col=fin>=0?'var(--success)':'var(--danger)';
+  let grid='';
+  for(let i=0;i<=4;i++){const v=minV+(maxV-minV)*i/4, yy=y(v).toFixed(1);
+    grid+=`<line x1="${PL}" x2="${W-PR}" y1="${yy}" y2="${yy}" stroke="var(--border)" stroke-width="1"/><text x="${W-PR+8}" y="${yy}" dominant-baseline="middle" fill="var(--muted)" font-size="11">${compact(v,false)}</text>`;}
+  let xl=''; const ticks=Math.min(W<520?3:6,n-1);
+  for(let k=0;k<=ticks;k++){const i=Math.round(k*(n-1)/ticks); if(!i) continue; const d=closed[i-1].date;
+    xl+=`<text x="${x(i).toFixed(1)}" y="${H-6}" text-anchor="${k===ticks?'end':'middle'}" fill="var(--muted)" font-size="11">${niceDate(d).slice(0,-3)}</text>`;}
+  const peakI=pts.indexOf(Math.max(...pts));
+  el.innerHTML=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Equity curve, ending at ${rs(fin,{sign:true})}">
+    <defs><linearGradient id="eqG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:${col};stop-opacity:.28"/><stop offset="1" style="stop-color:${col};stop-opacity:0"/></linearGradient></defs>
+    ${grid}
+    <line x1="${PL}" x2="${W-PR}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}" stroke="var(--muted)" stroke-dasharray="3 4" stroke-width="1"/>
+    <path d="${area}" fill="url(#eqG)" class="fade-up"/>
+    <path d="${line}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" pathLength="1" class="draw"/>
+    ${peakI>0&&peakI<n-1?`<circle cx="${x(peakI).toFixed(1)}" cy="${y(pts[peakI]).toFixed(1)}" r="4" fill="var(--card)" stroke="${col}" stroke-width="2"/><text x="${x(peakI).toFixed(1)}" y="${(y(pts[peakI])-10).toFixed(1)}" text-anchor="${x(peakI)>W-PR-60?'end':'middle'}" fill="var(--sec)" font-size="11">Peak ${compact(pts[peakI])}</text>`:''}
+    <circle cx="${x(n-1).toFixed(1)}" cy="${y(fin).toFixed(1)}" r="5" fill="${col}" stroke="var(--card)" stroke-width="2"/>
+    ${xl}
+    <g class="xhair"><line id="eqX" y1="${PT}" y2="${PT+pH}" stroke="var(--sec)" stroke-width="1"/><circle id="eqD" r="5" fill="${col}" stroke="var(--card)" stroke-width="2"/></g>
   </svg>`;
+  const svg=el.querySelector('svg'), X=el.querySelector('#eqX'), D=el.querySelector('#eqD');
+  const move=e=>{
+    const r=svg.getBoundingClientRect();
+    const i=Math.max(0,Math.min(n-1,Math.round(((e.clientX-r.left)*(W/r.width)-PL)/pW*(n-1))));
+    const cx=x(i), cy=y(pts[i]);
+    X.setAttribute('x1',cx); X.setAttribute('x2',cx); D.setAttribute('cx',cx); D.setAttribute('cy',cy);
+    const t=closed[i-1];
+    showTip(i?`<b>${escHtml(t.sym)}</b> · ${niceDate(t.date)}<br>Trade ${rs(+t.netPnl||0,{sign:true,d:2})}<br><span class="t">Running total</span> ${rs(pts[i],{sign:true,d:2})}`:'<b>Start</b><br>₹0',
+      r.left+cx*(r.width/W), r.top+cy*(r.height/H));
+  };
+  el.onpointermove=move; el.onpointerdown=e=>{el.classList.add('touch');move(e);};
+  el.onpointerleave=()=>{el.classList.remove('touch');hideTip();};
+}
+
+// ─── DEMO MODE ───────────────────────────────────────────────
+// Open the app with ?demo to see it filled with made-up trades and portfolio,
+// no sign-in and nothing saved — handy for previewing UI changes locally.
+function startDemo(){
+  let seed=7; const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
+  const pick=a=>a[Math.floor(rnd()*a.length)];
+  const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const shift=n=>{const d=new Date();d.setDate(d.getDate()+n);return iso(d);};
+  const syms=[['NIFTY','Options'],['BANKNIFTY','Options'],['RELIANCE','Stocks'],['TCS','Stocks'],['HDFCBANK','Stocks'],['INFY','Stocks'],['SBIN','Futures'],['TATAMOTORS','Stocks'],['BTC/USDT','Crypto'],['ITC','Stocks']];
+  const rows=[]; const d=new Date(); d.setDate(d.getDate()-300); let n=0;
+  while(d<new Date()){
+    if(d.getDay()%6 && rnd()<.6){
+      for(let k=0,m=1+Math.floor(rnd()*2);k<m;k++){
+        const [sym,mkt]=pick(syms), dir=rnd()<.7?'Long':'Short', qty=pick([10,25,50,75,100]);
+        const entry=+(100+rnd()*2400).toFixed(2), win=rnd()<.57;
+        const move=entry*(win?rnd()*.016+.002:-(rnd()*.011+.002));
+        const exit=+(dir==='Long'?entry+move:entry-move).toFixed(2);
+        const pnl=+((dir==='Long'?exit-entry:entry-exit)*qty-12).toFixed(2);
+        const h=9+Math.floor(rnd()*5), mi=String(Math.floor(rnd()*60)).padStart(2,'0');
+        rows.push([`${iso(d)}T${h}:${mi}#${n++}`,iso(d),`${h}:${mi}`,`${h+1}:${mi}`,'1h',sym,mkt,dir,entry,exit,qty,pnl,
+          (pnl/(entry*qty)*100).toFixed(2),'','',pick(['Breakout','Pullback','ORB','Reversal']),'','',String(3+Math.floor(rnd()*3)),'','']);
+      }
+    }
+    d.setDate(d.getDate()+1);
+  }
+  rows.push([`${shift(0)}T10:05#o1`,shift(0),'10:05','','','INFY','Stocks','Long',1540,'',20,'','','','','Breakout','','','4','','']);
+  setTrades(rows);
+  portfolio={
+    fd:[
+      {INVESTMENTS:'SBI',AMOUNT:200000,'MATURE DATE':shift(18),PERCENTAGE:7.1,'RETURN AMOUNT':14200,'MATURE AMOUNT':214200},
+      {INVESTMENTS:'HDFC Bank',AMOUNT:150000,'MATURE DATE':shift(74),PERCENTAGE:7.25,'RETURN AMOUNT':10875,'MATURE AMOUNT':160875},
+      {INVESTMENTS:'ICICI Bank',AMOUNT:100000,'MATURE DATE':shift(210),PERCENTAGE:7.0,'RETURN AMOUNT':7000,'MATURE AMOUNT':107000},
+      {INVESTMENTS:'Kotak Mahindra',AMOUNT:250000,'MATURE DATE':shift(420),PERCENTAGE:7.4,'RETURN AMOUNT':37000,'MATURE AMOUNT':287000},
+    ],
+    bonds:[
+      {Name:'REC Ltd 2027',App:'Wint Wealth','Invested Date':shift(-200),'Mature Date':shift(165),'Amount invested':50000,'Mature amount':55200,'Months left':5,'Percentage of return':10.4},
+      {Name:'Navi Finserv',App:'Grip','Invested Date':shift(-90),'Mature Date':shift(640),'Amount invested':75000,'Mature amount':91500,'Months left':21,'Percentage of return':11.0},
+    ],
+    stock:[
+      {Stock:'RELIANCE','Buy Date':shift(-180),Entry:2450,Quantity:20,'Invested amount':49000,Status:'Holding'},
+      {Stock:'TCS','Buy Date':shift(-120),Entry:3900,Quantity:10,'Invested amount':39000,Status:'Holding'},
+      {Stock:'ITC','Buy Date':shift(-60),Entry:430,Quantity:100,'Invested amount':43000,Status:'Holding'},
+      {Stock:'INFY','Buy Date':shift(-250),Entry:1400,Quantity:30,'Invested amount':42000,Exit:1540,'Sell Date':shift(-40),Profit:4200,Percentage:10,Status:'Sold'},
+      {Stock:'TATAMOTORS','Buy Date':shift(-200),Entry:900,Quantity:40,'Invested amount':36000,Exit:855,'Sell Date':shift(-70),Profit:-1800,Percentage:-5,Status:'Sold'},
+      {Stock:'HDFCBANK','Buy Date':shift(-300),Entry:1500,Quantity:25,'Invested amount':37500,Exit:1690,'Sell Date':shift(-10),Profit:4750,Percentage:12.7,Status:'Sold'},
+      {Stock:'Mutual-fund','Buy Date':shift(-365),'Invested amount':120000,Status:'Holding'},
+      {Stock:'Mutual-fund','Buy Date':shift(-100),'Invested amount':60000,Status:'Holding'},
+      {Stock:'Mutual-fund','Buy Date':shift(-500),'Invested amount':50000,'Sell Date':shift(-30),Profit:9500,Percentage:19,Status:'Sold'},
+    ],
+  };
+  document.getElementById('mainApp').insertAdjacentHTML('afterbegin','<div class="demo-bar">Demo mode — sample data, nothing is saved</div>');
+  showApp();
+  renderTradeViews();
+  const tab=location.hash.slice(1);
+  goTab(TAB_ORDER.includes(tab)?tab:'stats');
 }
 
 // ─── EXPORT CSV ──────────────────────────────────────────────
@@ -2064,7 +2497,11 @@ function toast(msg,type='info'){
   setTimeout(()=>{el.style.transition='.3s';el.style.opacity='0';el.style.transform='translateX(110%)';setTimeout(()=>el.remove(),300)},4000);
 }
 
-if ('serviceWorker' in navigator) {
+// Not on localhost: a cached copy would hide the edits being previewed.
+const LOCAL = ['localhost','127.0.0.1'].includes(location.hostname);
+if ('serviceWorker' in navigator && LOCAL) {
+  navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+} else if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js');
 }
 </script>
