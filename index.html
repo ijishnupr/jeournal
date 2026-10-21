@@ -657,9 +657,15 @@ tr:hover td{background:var(--row-hover)}
               <div class="fg"><label>Date *</label><input type="date" id="fDate" required></div>
               <div class="fg"><label>Symbol / Ticker *</label><input type="text" id="fSymbol" placeholder="AAPL, BTC/USD…" required style="text-transform:uppercase"></div>
               <div class="fg"><label>Market</label>
-                <select id="fMarket">
+                <select id="fMarket" onchange="calcPnl()">
                   <option>Stocks</option><option>Crypto</option><option>Forex</option>
                   <option>Options</option><option>Futures</option><option>Indices</option><option>Other</option>
+                </select>
+              </div>
+              <div class="fg" id="fgProduct"><label>Product</label>
+                <select id="fProduct" onchange="calcPnl()">
+                  <option value="intraday">Intraday</option>
+                  <option value="delivery">Delivery</option>
                 </select>
               </div>
               <div class="fg"><label>Direction *</label>
@@ -676,8 +682,8 @@ tr:hover td{background:var(--row-hover)}
                 <input type="number" id="fExit" step="any" min="0" placeholder="0.00" oninput="calcPnl()">
               </div>
               <div class="fg"><label>Quantity *</label><input type="number" id="fQty" step="any" min="0" placeholder="100" required oninput="calcPnl()"></div>
-              <div class="fg"><label>Trade Charges ₹ <span style="font-weight:400;color:var(--muted)">(Groww)</span></label>
-                <input type="number" id="fCharges" step="any" min="0" value="12" oninput="calcPnl()">
+              <div class="fg"><label>Trade Charges ₹ <span style="font-weight:400;color:var(--muted)">(Groww · <a href="#" id="chargesMode" onclick="event.preventDefault();chargesManual=false;calcPnl()" title="Brokerage + STT + exchange + SEBI + stamp duty + GST. Type a value to override; click to recalculate.">auto</a>)</span></label>
+                <input type="number" id="fCharges" step="any" min="0" placeholder="0.00" oninput="chargesManual=true;calcPnl()">
               </div>
               <div class="fg"><label>Stop Loss</label><input type="number" id="fSL" step="any" min="0" placeholder="0.00"></div>
               <div class="fg"><label>Take Profit</label><input type="number" id="fTP" step="any" min="0" placeholder="0.00"></div>
@@ -1236,12 +1242,51 @@ function clearImage(){
   document.getElementById('imgPreview').style.display='none';
 }
 
+// ─── GROWW CHARGES ───────────────────────────────────────────
+// Groww + NSE/SEBI/stamp-duty rates (STT per Budget 2026, from 1 Apr 2026).
+// One buy and one sell order; with no exit price only the buy leg is charged.
+let chargesManual=false;
+function growwCharges(mkt, product, dir, entry, exit, qty){
+  const fno = mkt==='Options' ? 'opt' : mkt==='Futures' ? 'fut' : null;
+  const seg = fno || (product==='delivery' ? 'del' : 'intra');
+  const R = {
+    intra:{stt:[0,0.00025],   stamp:0.00003, exch:0.0000297},
+    del:  {stt:[0.001,0.001], stamp:0.00015, exch:0.0000297},
+    fut:  {stt:[0,0.0005],    stamp:0.00002, exch:0.0000173},
+    opt:  {stt:[0,0.0015],    stamp:0.00003, exch:0.0003503},
+  }[seg];
+  const buyPx  = dir==='Short' ? exit : entry;
+  const sellPx = dir==='Short' ? entry : exit;
+  const legs=[];
+  if(buyPx)  legs.push({side:0, val:buyPx*qty});
+  if(sellPx) legs.push({side:1, val:sellPx*qty});
+  let total=0;
+  for(const {side,val} of legs){
+    const brokerage = fno ? 20 : Math.max(5, Math.min(20, val*0.001));
+    const exch = val*R.exch, sebi = val*0.000001;
+    const stt = val*R.stt[side];
+    const stamp = side===0 ? val*R.stamp : 0;
+    const gst = 0.18*(brokerage+exch+sebi);
+    total += brokerage+exch+sebi+stt+stamp+gst;
+  }
+  if(seg==='del' && sellPx) total += 20*1.18;   // DP charge per scrip on sell
+  return total;
+}
+
 // ─── P&L CALC ────────────────────────────────────────────────
 function calcPnl(){
   const entry=+document.getElementById('fEntry').value;
   const exit=+document.getElementById('fExit').value;
   const qty=+document.getElementById('fQty').value;
   const dir=document.getElementById('fDir').value;
+  const mkt=document.getElementById('fMarket').value;
+  const product=document.getElementById('fProduct').value;
+  document.getElementById('fgProduct').style.display=(mkt==='Options'||mkt==='Futures')?'none':'';
+  document.getElementById('chargesMode').textContent=chargesManual?'manual · reset':'auto';
+  if(!chargesManual){
+    const c=(entry&&qty)?growwCharges(mkt,product,dir,entry,exit,qty):0;
+    document.getElementById('fCharges').value=c?c.toFixed(2):'';
+  }
   const charges=+document.getElementById('fCharges').value||0;
   const el=document.getElementById('pnlLive');
 
@@ -1891,7 +1936,7 @@ function editTrade(rowNum, ts){
   document.getElementById('fExit').value=t.exit||'';
   document.getElementById('fSL').value=t.sl||'';
   document.getElementById('fTP').value=t.tp||'';
-  document.getElementById('fCharges').value=12;
+  chargesManual=false;
   setSetupValue(t.setup||'');
   document.getElementById('fNotes').value=t.notes||'';
   document.getElementById('fMistakes').value=t.mistakes||'';
@@ -2624,7 +2669,10 @@ function viewDayInHistory(dateStr){
 function resetForm(){
   document.getElementById('tradeForm').reset();
   document.getElementById('fDate').value=today();
-  document.getElementById('fCharges').value=12;
+  chargesManual=false;
+  document.getElementById('fCharges').value='';
+  document.getElementById('chargesMode').textContent='auto';
+  document.getElementById('fgProduct').style.display='';
   document.getElementById('fTimeTaken').value='';
   document.getElementById('r3').checked=true;
   setSetupValue('');
