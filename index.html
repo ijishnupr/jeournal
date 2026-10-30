@@ -283,6 +283,7 @@ tr:hover td{background:var(--row-hover)}
 .cal-num{font-size:.8rem;font-weight:500;color:var(--sec)}
 .cal-pnl{font-size:.95rem;font-weight:500;margin-top:4px;line-height:1}
 .cal-cnt{font-size:.7rem;color:var(--sec);margin-top:3px}
+.cal-r{font-size:.72rem;font-weight:500;margin-top:2px}
 .cal-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.75rem;color:var(--sec);margin-bottom:12px}
 .cal-legend span{display:inline-flex;align-items:center;gap:5px}
 .cal-legend .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
@@ -308,6 +309,7 @@ tr:hover td{background:var(--row-hover)}
   .cal-cell.today .cal-num{width:18px;height:18px}
   .cal-pnl{font-size:.68rem;margin-top:2px}
   .cal-cnt{font-size:.56rem;margin-top:1px}
+  .cal-r{font-size:.56rem;margin-top:1px}
 }
 
 /* ── NO-TRADE DAYS ── */
@@ -2587,9 +2589,12 @@ function renderCalendar(){
     const parts = t.date.split('-');
     if(+parts[0]!==calYear || +parts[1]-1!==calMonth) return;
     const d = +parts[2];
-    if(!dayMap[d]) dayMap[d]={pnl:0,count:0};
+    if(!dayMap[d]) dayMap[d]={pnl:0,count:0,r:0,rN:0};
     dayMap[d].pnl += +t.netPnl||0;
     dayMap[d].count++;
+    // R taken = P&L ÷ amount risked to the stop loss; trades without an SL are left out.
+    const risk = Math.abs(+t.entry - +t.sl) * +t.qty;
+    if(t.netPnl!=='' && t.sl!=='' && risk>0){ dayMap[d].r += +t.netPnl/risk; dayMap[d].rN++; }
   });
 
   document.getElementById('calCharges').innerHTML = chargesSeg();
@@ -2630,7 +2635,8 @@ function renderCalendar(){
     html += `<div class="cal-cell${pnlCls}${isToday?' today':''}${data?' has-t':''}${nt?' skip':''}${canLog&&!nt?' can-log':''}${isWeekend?' weekend':''}${holidayName?' holiday':''}"${onclick}${title}>
       <div class="cal-num">${d}</div>
       ${data?`<div class="cal-pnl ${data.pnl>=0?'pos':'neg'}">${data.pnl>=0?'+':''}${data.pnl.toFixed(0)}</div>
-      <div class="cal-cnt">${data.count} trade${data.count>1?'s':''}</div>`:nt?`<div class="cal-skip">No trade</div><div class="cal-cnt">${escHtml(NT_LABEL[nt.reason]||'Other')}</div>`:''}
+      <div class="cal-cnt">${data.count} trade${data.count>1?'s':''}</div>
+      ${data.rN?`<div class="cal-r ${data.r>=0?'pos':'neg'}" title="Risk:reward taken — P&amp;L in multiples of risk to SL${data.rN<data.count?` (${data.rN} of ${data.count} trades have an SL)`:''}">${data.r>=0?'+':''}${data.r.toFixed(1)}R</div>`:''}`:nt?`<div class="cal-skip">No trade</div><div class="cal-cnt">${escHtml(NT_LABEL[nt.reason]||'Other')}</div>`:''}
     </div>`;
   }
   document.getElementById('calGrid').innerHTML = html;
