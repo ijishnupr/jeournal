@@ -1519,6 +1519,11 @@ function mapTradeRow(r){
   t.netPnl=t.pnl===''?'':inclCharges?(+t.pnl-t.charges).toFixed(2):t.pnl;
   return t;
 }
+// R taken = P&L ÷ amount risked to the stop loss; null for open trades or trades without an SL.
+function tradeR(t){
+  const risk=Math.abs(+t.entry - +t.sl) * +t.qty;
+  return t.netPnl!=='' && t.sl!=='' && risk>0 ? +t.netPnl/risk : null;
+}
 function setInclCharges(on){
   inclCharges=on;
   try{ localStorage.setItem('tj_incl_charges',on?'1':'0'); }catch{}
@@ -2261,6 +2266,7 @@ function renderStats(){
   const pf=gL>0?(gW/gL).toFixed(2):wins.length?'∞':'—';
   const expect=closed.length?total/closed.length:0;
   const best=wins.length?Math.max(...wins.map(P)):0, worst=losses.length?Math.min(...losses.map(P)):0;
+  const rMults=closed.map(tradeR).filter(r=>r!==null), avgR=rMults.length?rMults.reduce((a,b)=>a+b,0)/rMults.length:null;
   const payoff=avgLoss?avgWin/Math.abs(avgLoss):0;
   let peak=0,run=0,maxDD=0; closed.forEach(t=>{run+=P(t);peak=Math.max(peak,run);maxDD=Math.max(maxDD,peak-run);});
   // streaks
@@ -2342,6 +2348,7 @@ function renderStats(){
       <div class="kpi"><span>Win rate</span><b>${cnt(winRate,'pct')}</b></div>
       <div class="kpi"><span>Profit factor</span><b>${pf}</b></div>
       <div class="kpi"><span>Expectancy / trade</span><b class="${tone(expect)}">${cnt(expect,'rss')}</b></div>
+      <div class="kpi" title="Average P&amp;L per trade in multiples of the risk to its stop loss${avgR!==null&&rMults.length<closed.length?` — ${rMults.length} of ${closed.length} trades have an SL`:''}"><span>Avg R:R taken</span><b class="${avgR===null?'':tone(avgR)}">${avgR===null?'—':(avgR>=0?'+':'')+avgR.toFixed(2)+'R'}</b></div>
       <div class="kpi"><span>Best trade</span><b class="pos">${cnt(best,'rss')}</b></div>
       <div class="kpi"><span>Worst trade</span><b class="neg">${cnt(worst,'rss')}</b></div>
       <div class="kpi"><span>Max drawdown</span><b class="${maxDD?'neg':''}">${maxDD?'-'+rs(maxDD):'₹0'}</b></div>
@@ -2592,9 +2599,8 @@ function renderCalendar(){
     if(!dayMap[d]) dayMap[d]={pnl:0,count:0,r:0,rN:0};
     dayMap[d].pnl += +t.netPnl||0;
     dayMap[d].count++;
-    // R taken = P&L ÷ amount risked to the stop loss; trades without an SL are left out.
-    const risk = Math.abs(+t.entry - +t.sl) * +t.qty;
-    if(t.netPnl!=='' && t.sl!=='' && risk>0){ dayMap[d].r += +t.netPnl/risk; dayMap[d].rN++; }
+    const r = tradeR(t);
+    if(r!==null){ dayMap[d].r += r; dayMap[d].rN++; }
   });
 
   document.getElementById('calCharges').innerHTML = chargesSeg();
