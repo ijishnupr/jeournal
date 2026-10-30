@@ -814,7 +814,7 @@ tr:hover td{background:var(--row-hover)}
             <h2 id="calTitle" style="min-width:170px;text-align:center"></h2>
             <button class="btn btn-outline btn-icon" onclick="calNav(1)">&#8594;</button>
           </div>
-          <div id="calSummary"></div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><div id="calSummary"></div><div id="calCharges"></div></div>
         </div>
         <div class="card-body">
           <div class="cal-legend" id="calLegend"></div>
@@ -880,6 +880,7 @@ let trades = [];
 let rawTrades = [];   // last rows exactly as the sheet returned them (what gets cached)
 let imgFile = null;
 let editingTs = null;
+let inclCharges = localStorage.getItem('tj_incl_charges')==='1';   // Stats & Calendar P&L after Groww charges
 let editingImg = { url:'', driveId:'' };
 
 const HEADERS = ['Timestamp','Date','Entry Time','Exit Time','Time Taken',
@@ -1500,17 +1501,31 @@ function hydrateFromCache(){
 }
 
 function mapTradeRow(r){
-  return {
+  const t={
     ts:String(r[0]||''), date:fmtDate(r[1]), time:fmtTime(r[2]),
     exitTime:fmtTime(r[3]), timeTaken:String(r[4]||''),
     sym:String(r[5]||''), mkt:String(r[6]||''), dir:String(r[7]||''),
     entry:r[8]||'', exit:r[9]||'', qty:r[10]||'',
-    pnl:String(r[11]||''), pct:String(r[12]||''), netPnl:String(r[11]||''),
+    pnl:String(r[11]||''), pct:String(r[12]||''),
     sl:r[13]||'', tp:r[14]||'',
     setup:String(r[15]||''), notes:String(r[16]||''), mistakes:String(r[17]||''),
     rating:String(r[18]||''), imgUrl:String(r[19]||''), driveId:String(r[20]||''),
     rowNum:r[21]||0
   };
+  // Charges aren't stored with the trade, so they're recomputed from it (product assumed intraday).
+  t.charges=(+t.entry&&+t.qty)?growwCharges(t.mkt,'intraday',t.dir,+t.entry,+t.exit,+t.qty):0;
+  t.netPnl=t.pnl===''?'':inclCharges?(+t.pnl-t.charges).toFixed(2):t.pnl;
+  return t;
+}
+function setInclCharges(on){
+  inclCharges=on;
+  try{ localStorage.setItem('tj_incl_charges',on?'1':'0'); }catch{}
+  trades=rawTrades.map(mapTradeRow);
+  statsAnimNext=true;
+  renderTradeViews();
+}
+function chargesSeg(){
+  return `<div class="seg" role="group" aria-label="Charges"><button class="${inclCharges?'':'on'}" onclick="setInclCharges(false)">Gross</button><button class="${inclCharges?'on':''}" onclick="setInclCharges(true)" title="Brokerage, STT, exchange, SEBI, stamp duty and GST deducted (Groww, intraday rates)">Incl. charges</button></div>`;
 }
 function setTrades(rows){
   rawTrades=Array.isArray(rows)?rows:[];
@@ -2310,7 +2325,7 @@ function renderStats(){
   <section class="hero fade-up">
     <div class="hero-top">
       <div>
-        <div class="eyebrow">Net P&amp;L · ${rangeLbl}</div>
+        <div class="eyebrow">${inclCharges?'Net P&amp;L after charges':'Gross P&amp;L'} · ${rangeLbl}</div>
         <div class="hero-num ${tone(total)}">${cnt(total,'rs2')}</div>
         <div class="chips">
           <span class="chip">${wins.length} wins · ${losses.length} losses${even?` · ${even} flat`:''}</span>
@@ -2318,7 +2333,7 @@ function renderStats(){
           ${openN?`<span class="chip">${openN} open</span>`:''}
         </div>
       </div>
-      ${seg}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${chargesSeg()}${seg}</div>
     </div>
     <div class="kpis">
       <div class="kpi"><span>Closed trades</span><b>${cnt(closed.length,'int')}</b></div>
@@ -2577,6 +2592,8 @@ function renderCalendar(){
     dayMap[d].count++;
   });
 
+  document.getElementById('calCharges').innerHTML = chargesSeg();
+
   // monthly summary
   const mPnl = Object.values(dayMap).reduce((s,d)=>s+d.pnl,0);
   const mCount = Object.values(dayMap).reduce((s,d)=>s+d.count,0);
@@ -2631,6 +2648,7 @@ function openTradeDetail(ts){
   const pnlVal=parseFloat(t.pnl);
   const pnlCls=t.pnl?(pnlVal>=0?'ppos':'pneg'):'';
   const pnlStr=t.pnl?`${pnlVal>=0?'+':''}${t.pnl} (${t.pct})`:'Open';
+  const net=t.pnl?pnlVal-t.charges:null;
   const stars=t.rating?'★'.repeat(+t.rating)+'☆'.repeat(5-+t.rating):'—';
   const timeStr=t.time&&t.exitTime?`${t.time} – ${t.exitTime}`:(t.time||'—');
   document.getElementById('detailTitle').textContent=`${t.sym} — ${t.date}`;
@@ -2640,6 +2658,8 @@ function openTradeDetail(ts){
       <div class="detail-item"><label>Market</label><div>${escHtml(t.mkt)||'—'}</div></div>
       <div class="detail-item"><label>Direction</label><div><span class="badge ${t.dir==='Long'?'b-long':'b-short'}">${t.dir}</span></div></div>
       <div class="detail-item"><label>P&amp;L</label><div class="${pnlCls}">${pnlStr}</div></div>
+      <div class="detail-item"><label>Trade Charges</label><div>${t.charges?'₹'+t.charges.toFixed(2):'—'}</div></div>
+      <div class="detail-item"><label>Net P&amp;L <span style="color:var(--muted)">(after charges)</span></label><div class="${net===null?'':net>=0?'ppos':'pneg'}">${net===null?'—':`${net>=0?'+':''}${net.toFixed(2)}`}</div></div>
       <div class="detail-item"><label>Entry Price</label><div>${t.entry}</div></div>
       <div class="detail-item"><label>Exit Price</label><div>${t.exit||'—'}</div></div>
       <div class="detail-item"><label>Quantity</label><div>${t.qty}</div></div>
